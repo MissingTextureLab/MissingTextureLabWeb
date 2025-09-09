@@ -1,0 +1,649 @@
+:root {
+    --frutiger-purple: #6d28d9;
+    --frutiger-light: #a855f7;
+    --frutiger-dark: #4c1d95;
+    --frutiger-cyan: #06b6d4;
+    --frutiger-blue: #0ea5e9;
+    --frutiger-white: #f8fafc;
+    --frutiger-glass: rgba(168, 85, 247, 0.15);
+    --frutiger-glass-border: rgba(168, 85, 247, 0.3);
+    --frutiger-shadow: rgba(109, 40, 217, 0.2);
+    --frutiger-glow: rgba(168, 85, 247, 0.4);
+    --chrome-silver: #e2e8f0;
+    --chrome-dark: #64748b;
+    --taskbar-h: 40px;
+    --spotify-w: 860px;      /* 600/860 según widget (playlist = 352px alto) */
+    --spotify-h: 352px;      /* 152px si es track; 232/352/… según el embed */
+    --titlebar-h: 32px;      /* coincide con .window-header */
+}
+
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Cascadia Code',monospace;}
+
+body{
+  position: relative;
+  background: 
+      radial-gradient(circle at 20% 30%, rgba(168, 85, 247, 0.3) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(6, 182, 212, 0.2) 0%, transparent 50%),
+      linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 30%, #cbd5e1 100%);
+  height:100vh;
+  overflow:hidden;
+}
+
+body::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: url("missingLogo.png") center center no-repeat; /* centrada */
+  background-size: 300px auto;   /* o contain / cover según prefieras */
+  filter: blur(8px);
+  opacity: 0.7;
+  z-index: 0;                    /* ← evita quedar por debajo del fondo del body */
+  pointer-events: none;
+}
+
+.desktop-icons{
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: var(--taskbar-h);
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.icon{
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 110px;
+  height: 110px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  padding: 12px;
+  background: transparent;
+}
+
+.icon:hover{
+  background: var(--frutiger-glass);
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 12px 35px var(--frutiger-shadow);
+}
+
+.icon.selected{
+  background: var(--frutiger-glow);
+  box-shadow: 0 0 25px var(--frutiger-glow);
+}
+.icon.dragging{opacity: 0.8; z-index: 1000; transform: rotate(2deg) scale(1.05);}
+.icon.drag-over{
+  background: rgba(6, 182, 212, 0.3); 
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
+}
+
+.icon-img{
+  width:72px;
+  height:72px;
+  margin-bottom:8px;
+  pointer-events:none;
+  filter: drop-shadow(0 4px 12px var(--frutiger-shadow));
+  border-radius: 0; /* ← antes era 8px */
+}
+.icon span{
+  font-size:12px;
+  pointer-events:none;
+  word-wrap:break-word;
+  line-height:1.4;
+  font-weight: 600;
+  color: var(--frutiger-dark);
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9);
+  max-width: 90px;
+  white-space: normal;
+  overflow-wrap: break-word;
+  text-align: center;
+}
+
+.grid-position{
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  border: 2px dashed rgba(168, 85, 247, 0.4);
+  display: none;
+  background: rgba(168, 85, 247, 0.05);
+}
+
+.grid-position.highlight{
+  border: 2px solid var(--frutiger-cyan);
+  background: rgba(6, 182, 212, 0.15);
+  display: block;
+  animation: frutiger-pulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+}
+
+@keyframes frutiger-pulse {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
+}
+
+.window{
+  position:absolute;
+  background: linear-gradient(135deg, var(--frutiger-white) 0%, var(--chrome-silver) 100%);
+  border: 1px solid var(--frutiger-glass-border);
+  color: var(--frutiger-dark);
+  display:none;
+  min-width:300px;
+  min-height:200px;
+  resize:both;
+  overflow:auto;
+  box-shadow: 
+      0 20px 40px var(--frutiger-shadow),
+      0 0 0 1px rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(20px);
+}
+
+/* Unificación: una sola definición con la variable */
+.window-header{
+  background: linear-gradient(135deg, var(--frutiger-purple) 0%, var(--frutiger-light) 100%);
+  color: var(--frutiger-white);
+  padding: 8px 12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  cursor:move;
+  border-bottom: 1px solid var(--frutiger-glass-border);
+  font-weight: 600;
+  font-size: 13px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  height: var(--titlebar-h);
+}
+
+.window-buttons span{
+  margin-left:4px;
+  cursor:pointer;
+  width: 18px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 11px;
+  font-weight: bold;
+  background: var(--chrome-silver);
+  border: 1px solid var(--chrome-dark);
+  color: var(--frutiger-dark);
+}
+
+.close-btn:hover{ background: #ef4444; color: white; }
+.min-btn:hover{   background: var(--frutiger-cyan); color: white; }
+.max-btn:hover{   background: var(--frutiger-light); color: white; }
+
+.window-content{
+  padding: 20px; 
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  min-height: 150px;
+}
+
+.status-bar{
+  position:absolute;
+  bottom:0;
+  left:0;
+  right:0;
+  background: linear-gradient(135deg, var(--chrome-silver) 0%, var(--frutiger-white) 100%);
+  border-top: 1px solid var(--frutiger-glass-border);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding: 4px 12px;
+  font-size:12px;
+  height: var(--taskbar-h);
+  backdrop-filter: blur(20px);
+  box-shadow: 
+      0 -8px 20px var(--frutiger-shadow),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.start-btn{
+  background: linear-gradient(135deg, var(--frutiger-purple) 0%, var(--frutiger-light) 100%);
+  border: 1px solid var(--frutiger-purple);
+  padding: 8px;
+  cursor:pointer;
+  color: var(--frutiger-white);
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+      0 4px 12px var(--frutiger-shadow),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.start-btn:hover{
+  transform: translateY(-1px);
+  box-shadow: 
+      0 6px 16px var(--frutiger-glow),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  background: linear-gradient(135deg, var(--frutiger-light) 0%, var(--frutiger-cyan) 100%);
+}
+
+.start-btn:active{
+  transform: translateY(0px);
+  box-shadow: 
+      0 2px 8px var(--frutiger-shadow),
+      inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.context-menu{
+  position:absolute;
+  background: var(--frutiger-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--frutiger-glass-border);
+  display:none;
+  min-width:160px;
+  z-index:2000;
+  box-shadow: 
+      0 12px 24px var(--frutiger-shadow),
+      0 0 0 1px rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+}
+
+.context-menu-item{
+  padding: 12px 16px;
+  cursor:pointer;
+  transition: all 0.2s ease;
+  font-size: 11px;
+  color: var(--frutiger-dark);
+  font-weight: 500;
+  border-bottom: 1px solid rgba(168, 85, 247, 0.1);
+}
+.context-menu-item:last-child{ border-bottom: none; }
+
+.context-menu-item:hover{
+  background: var(--frutiger-light);
+  color: var(--frutiger-white);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.start-menu{
+  position:absolute;
+  bottom:50px;
+  left:12px;
+  width: 180px;
+  background: var(--frutiger-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--frutiger-glass-border);
+  border-radius: 0;
+  display:none;
+  flex-direction: column;
+  box-shadow: 
+      0 20px 40px var(--frutiger-shadow),
+      0 0 0 1px rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+  padding: 6px;
+}
+
+.start-menu-item{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor:pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  color: var(--frutiger-dark);
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 4px;
+}
+
+.start-menu-item:hover{
+  background: var(--frutiger-light);
+  color: var(--frutiger-white);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  transform: none;
+}
+
+.start-menu-icon{ font-size: 18px; margin: 0; }
+
+.taskbar-icons{
+  display:flex;
+  gap:4px;
+  align-items: center;
+}
+
+.task-icon{
+  background: var(--chrome-silver);
+  border: 1px solid var(--chrome-dark);
+  padding: 6px 12px;
+  color: var(--frutiger-dark);
+  cursor:pointer;
+  font-size: 10px;
+  transition: 0.2s ease;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+}
+
+.task-icon:hover{
+  background: var(--frutiger-light);
+  color: white;
+  transform: translateY(-1px);
+}
+.task-icon:active{ transform: translateY(0px); }
+
+#clock{
+  font-weight: bold;
+  color: var(--frutiger-dark);
+  font-size: 12px;
+  padding: 6px 10px;
+  background: var(--chrome-silver);
+  border: 1px solid var(--chrome-dark);
+  backdrop-filter: blur(10px);
+}
+
+/* Ventana de propiedades */
+.properties-section{
+  margin-bottom: 16px;
+  padding: 12px;
+  background: rgba(168, 85, 247, 0.05);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+.properties-section h4{
+  color: var(--frutiger-purple);
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.properties-section p{
+  margin: 4px 0;
+  font-size: 11px;
+  color: var(--frutiger-dark);
+}
+.properties-icon{
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 2px 8px var(--frutiger-shadow));
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: rgba(168, 85, 247, 0.1); }
+::-webkit-scrollbar-thumb { background: var(--frutiger-light); }
+::-webkit-scrollbar-thumb:hover { background: var(--frutiger-purple); }
+
+/* Overlay del screensaver */
+#screensaver{
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .6s ease;
+}
+#screensaver.active{ opacity: 1; pointer-events: all; }
+
+/* Contenedor para emitir el brillo por detrás de la imagen */
+.glow-wrap{
+  position: relative;
+  display: inline-block;
+}
+
+/* Halo 1 (ancho y suave) */
+.glow-wrap::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  width: 600px;
+  height: 600px;
+  transform: translate(-50%, -50%);
+  background:
+      radial-gradient(closest-side, rgba(168,85,247,0.55), rgba(168,85,247,0.18) 50%, transparent 70%),
+      radial-gradient(closest-side, rgba(14,165,233,0.45), transparent 65%);
+  filter: blur(45px);
+  opacity: .95;
+  z-index: 0;
+  transition: opacity .28s ease, filter .28s ease, transform .28s ease;
+  pointer-events: none;
+}
+
+/* Halo 2 (núcleo) */
+.glow-wrap::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  width: 400px;
+  height: 400px;
+  transform: translate(-50%, -50%);
+  background:
+      radial-gradient(closest-side, rgba(255,255,255,0.25), rgba(168,85,247,0.35) 40%, transparent 70%),
+      radial-gradient(closest-side, rgba(14,165,233,0.35), transparent 60%);
+  filter: blur(30px);
+  opacity: 1;
+  z-index: 0;
+  transition: opacity .28s ease, filter .28s ease, transform .28s ease;
+  pointer-events: none;
+}
+
+/* Imagen (300px ancho) */
+#screensaver-logo{
+  width: 300px;
+  height: auto;
+  display: block;
+  position: relative;
+  z-index: 1;
+  user-select: none;
+  -webkit-user-drag: none;
+  transition: transform .35s ease; /* transición suave */
+  transform: scale(1);             /* estado por defecto */
+}
+
+/* Hover: brillo más alto y logo grande mientras el ratón esté encima */
+.glow-wrap:hover::before{
+  opacity: 1;
+  filter: blur(95px);
+  transform: translate(-50%, -50%) scale(1.12);
+}
+.glow-wrap:hover::after{
+  opacity: 1;
+  filter: blur(75px);
+  transform: translate(-50%, -50%) scale(1.08);
+}
+.glow-wrap:hover #screensaver-logo{
+  transform: scale(1.08);
+}
+
+/* Entrada (al iniciar/apagar): sube glow desde 0 y hace leve zoom */
+@keyframes glowIntro {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(.8); filter: blur(6px); }
+  60%  { opacity: .9; transform: translate(-50%, -50%) scale(1.05); filter: blur(36px); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(30px); }
+}
+
+/* Flash de salida */
+@keyframes glowFlash {
+  0%   { opacity: 1; filter: blur(30px); }
+  60%  { opacity: 1; filter: blur(70px); }
+  100% { opacity: .8; filter: blur(22px); }
+}
+
+#screensaver.booting .glow-wrap::before,
+#screensaver.booting .glow-wrap::after{
+  animation: glowIntro .8s ease both;
+}
+#screensaver.flash .glow-wrap::before,
+#screensaver.flash .glow-wrap::after{
+  animation: glowFlash .22s ease both;
+}
+
+/* Pop del logo al aparecer */
+@keyframes logoPop {
+  0%   { transform: scale(0.9); opacity: 0; }
+  60%  { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+#screensaver-logo.animate-in { animation: logoPop 0.8s ease forwards; }
+
+/* Grid de archivos */
+.file-grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+}
+.file-card{
+  background: rgba(168,85,247,0.06);
+  border: 1px solid rgba(168,85,247,0.18);
+  border-radius: 10px;
+  padding: 10px;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.file-card:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px var(--frutiger-shadow);
+  background: rgba(168,85,247,0.12);
+}
+.file-thumb-wrap{
+  position: relative;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  border-radius: 8px;
+  background: rgba(0,0,0,.06);
+}
+.file-thumb{ width: 100%; height: 100%; object-fit: cover; display: block; }
+.file-badge{
+  position: absolute;
+  left: 8px; bottom: 8px;
+  font-size: 10px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(0,0,0,.6);
+  color: #fff;
+  backdrop-filter: blur(4px);
+}
+.file-meta{ margin-top: 8px; }
+.file-name{
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--frutiger-dark);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.embed-wrap{ width: 100%; }
+
+/* Ventanas de archivos a pantalla completa */
+.window.window-media{
+  display:flex !important;
+  flex-direction:column;
+  overflow:hidden;
+}
+.window.window-media .window-content{
+  flex:1;
+  padding:0;
+  background:#000;
+  backdrop-filter:none;
+  min-height:0;            /* ← clave para que el iframe pueda llenar */
+}
+
+/* Wrapper que rellena toda la ventana */
+.embed-fill{ width:100%; height:100%; }
+.embed-fill iframe,
+.embed-fill video,
+.embed-fill img{
+  width:100%; height:100%;
+  display:block; border:0;
+}
+
+/* Spotify centrado (si lo sigues usando así) */
+.embed-auto{
+  width:100%; height:100%;
+  display:flex; align-items:center; justify-content:center;
+  background:#000;
+}
+.embed-auto iframe{
+  width:min(100%, var(--spotify-w));
+  height: var(--spotify-h); /* 152 si es track */
+  border:0; display:block;
+}
+
+/* Ventana de Spotify sin scrollbars innecesarios */
+.window-spotify {
+  box-sizing: content-box;              /* mide solo contenido */
+  border: none;
+  resize: none !important;
+  overflow: hidden !important;
+
+  /* ancho y alto = iframe + header */
+  width: var(--spotify-w);
+  height: calc(var(--spotify-h) + var(--titlebar-h));
+  max-width: var(--spotify-w);
+  max-height: calc(var(--spotify-h) + var(--titlebar-h));
+}
+
+/* Header Spotify: altura fija por variable */
+.window-spotify .window-header {
+  height: var(--titlebar-h);
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 12px;
+}
+
+/* Contenido sin extras */
+.window-spotify .window-content {
+  box-sizing: content-box;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  overflow: hidden !important;
+  height: var(--spotify-h); /* EXACTO al iframe */
+}
+
+/* Iframe de Spotify */
+.window-spotify iframe.spoti-frame {
+  display: block;
+  width: var(--spotify-w);
+  height: var(--spotify-h);
+  border: none;
+}
+
+/* Botones que se ocultan en media/Spotify */
+.window-media .min-btn { display: none !important; }
+.window-spotify .max-btn { display: none !important; }
+.window-spotify .min-btn { display: none !important; }
+
+/* Overlay global que captura eventos durante el drag de ventanas */
+.drag-shield {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  cursor: grabbing;
+  z-index: 999999;
+  display: none;
+}
+
+/* Mientras se arrastra: sin selección y sin interacciones del contenido */
+body.dragging { user-select: none !important; }
+body.dragging iframe,
+body.dragging .window-content,
+body.dragging .icon {
+  pointer-events: none !important;
+}
+
+* {
+  border-radius: 0 !important;
+}
