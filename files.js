@@ -1,17 +1,20 @@
-// ===== desktop-files.js =====
-// Requiere que existan: desktop, folders, bringToFront, addToTaskbar, activeWindow, offsetX, offsetY
 
-// 1) Define aquí los archivos por carpeta (edítalo a tu gusto)
 // 1) Define aquí los archivos por carpeta (edítalo a tu gusto)
 const filesByFolder = {
   "Music": [
-    { name: "ExpoMaria",              kind: "site",     host: "web",      url: "https://bbaa.usal.es/actividades/la-folklorica" }, // página web
+    {
+      name: "Expo Maria",
+      kind: "project",
+      category: "Música para expo",
+      thumb: "https://bbaa.usal.es/wp-content/uploads/2022/06/eae_la-_folklorika_01.jpg",
+      links: [
+        { label: "Artículo", kind: "site", host: "web", url: "https://bbaa.usal.es/actividades/la-folklorica" },
+        { label: "Spotify", kind: "song", host: "spotify", url: "https://open.spotify.com/intl-es/album/5TOZnTc0jaTr3m4ESH4OAU" }
+      ]
+    }, // página web
     { name: "Música tati",            kind: "song",     host: "spotify",  url: "https://" },
-    { name: "Bandcamp",               kind: "site",     host: "bandcamp", url: "https://freewatermarkremover.bandcamp.com" },
-    { name: "Perfil Spotify",         kind: "site",     host: "spotify",  url: "https://open.spotify.com/intl-es/artist/4MTxGkUNTkNzbZHIfLvkGH" },
-    { name: "Mixes dj",               kind: "playlist", host: "youtube",  url: "https://www.youtube.com/playlist?list=PL-GwSH3Z4NF1uhCdIUDfBS4T7-w42JWR3" },
-    { name: "Hackaton",               kind: "link",     host: "web",      url: "https://valenciaplaza.com/musica-opera-valencia-comunitat-valenciana/la-music-hackaton-de-valencia-transforma-las-naves-en-un-estudio-de-experimentacion-sonora" },
-    { name: "Modul",                  kind: "link",     host: "web",      url: "https://www.instagram.com/p/DEflCYvsHDh/?img_index=4" },
+    { name: "Hackaton",               kind: "link",     host: "web",      url: "https://valenciaplaza.com/musica-opera-valencia-comunitat-valenciana/la-music-hackaton-de-valencia-transforma-las-naves-en-un-estudio-de-experimentacion-sonora",thumb: "//d31u1w5651ly23.cloudfront.net/articulos/articulos-312842.jpg"},
+    { name: "Modul",                  kind: "link",     host: "web",      url: "https://www.instagram.com/p/DEflCYvsHDh/?img_index=4", thumb: "https://drive.google.com/file/d/1BQ8-DwEkPk2sArQoRh-p1c-tgmit05Hj/view?usp=sharing",  subtitle: "Instalación VR · 2024"},
   ],
 
   "Videos": [
@@ -19,7 +22,7 @@ const filesByFolder = {
     { name: "Con esos ojitos",        kind: "video", host: "youtube", url: "https://www.youtube.com/watch?v=df1wnWwtuQc" },
     { name: "Windows66",              kind: "video", host: "youtube", url: "https://www.youtube.com/watch?v=yalKehB3IYo" },
     { name: "segunda intermisión",    kind: "video", host: "youtube", url: "https://youtu.be/wGGo4pKWG84?si=Lm6oeCQsIzO19Ddm" },
-    { name: "SOMETIMES U CANT TRUST IN WHAT SEEMS REAL",      kind: "video", host: "youtube", url: "https://youtu.be/O80O1P7qKXg?si=ll1zQ6nGrevnqw94" },
+    { name: "SOMETIMES U CANT TRUST IN WHAT SEEMS REAL",      kind: "video", host: "youtube", url: "https://youtu.be/O80O1P7qKXg?si=ll1zQ6nGrevnqw94", minTitleSize: 8.5},
     { name: "videoarte sahara",       kind: "video", host: "youtube", url: "" },
   ],
 
@@ -37,13 +40,11 @@ const filesByFolder = {
   ],
 
   "VR y 3D": [
-    { name: "Cyclops",                               kind: "link", host: "web", url: "" },
-    { name: "ThemissingArchive",                     kind: "link", host: "web", url: "" },
-    { name: "NobodyIsAnIsland",                      kind: "link", host: "web", url: "" },
+    { name: "Cyclops",                               kind: "link", host: "web", url: "",thumb: "https://drive.google.com/file/d/1ju5mwsBQGtaA52hmnRGPQd9QA9LAQiA8/view?usp=sharing"},
+    { name: "ThemissingArchive",                     kind: "link", host: "web", url: "", thumb: "https://drive.google.com/file/d/15K-gh0BFH97IWhGvxmGfEv2fTD2lu5ht/view?usp=drive_link"},
+    { name: "NobodyIsAnIsland",                      kind: "link", host: "web", url: "https://www.instagram.com/p/C38S6ttijD6/?img_index=1",thumb: "https://drive.google.com/file/d/1BL2Kt9zuBodDraxHQEBbeLPP28c7NGxG/view?usp=drive_link" },
     { name: "Hand trackingVR",                       kind: "link", host: "web", url: "" },
-    { name: "Cuadro3D",               kind: "link", host: "web", url: "" },
-    { name: "Realidad virtual y diversidad funcional", kind: "link", host: "web", url: "" },
-    { name: "Arte digital y deportes",               kind: "link", host: "web", url: "" },
+    { name: "Cuadro3D",               kind: "link", host: "web", url: "https://www.instagram.com/p/Cr9MiedogPW/?img_index=1",thumb:"https://drive.google.com/file/d/1OYTo87y1dYFFA8KCDdaKhMk39g1mAkdO/view?usp=sharing" },
   ],
 
   // Mantengo tu carpeta Documents original
@@ -104,6 +105,31 @@ function getDriveId(url) {
 }
 
 // 3) Thumbnails
+function normalizeDriveImage(url, size = 'w640-h360') {
+  try {
+    const u = new URL(url, location.href);
+    let id = null;
+
+    // /file/d/ID/...
+    const m = u.pathname.match(/\/file\/d\/([^/]+)/);
+    if (m) id = m[1];
+
+    // ...o ?id=ID
+    if (!id) id = u.searchParams.get('id');
+
+    if (!id) return url; // no parece de Drive, devuélvelo tal cual
+
+    // Opción 1 (recomendada): thumbnail con tamaño (16:9 en ejemplo)
+    // Cambia ‘w640-h360’ por lo que prefieras (wX-hY)
+    return `https://drive.google.com/thumbnail?id=${id}&sz=${size}`;
+
+    // Opción 2 (comentada): imagen “full” sin forzar tamaño
+    // return `https://drive.google.com/uc?export=view&id=${id}`;
+  } catch {
+    return url;
+  }
+}
+
 const spotifyThumbCache = new Map();
 async function getSpotifyThumb(url) {
   const info = getSpotifyInfo(url);
@@ -136,6 +162,15 @@ function placeholderThumb(kind) {
   );
 }
 async function ensureThumb(file, imgEl) {
+
+  if (file.thumb) {
+    // ⬇️ Normaliza si es de Drive; si no, lo deja tal cual
+    const maybeDrive = /drive\.google\.com/.test(file.thumb);
+    imgEl.src = maybeDrive ? normalizeDriveImage(file.thumb, 'w320-h180')
+                           : file.thumb;
+    return;
+  }
+
   imgEl.src = placeholderThumb(file.kind);
   let real = null;
   if (file.host === "youtube") real = getYouTubeThumb(file.url);
@@ -146,6 +181,8 @@ async function ensureThumb(file, imgEl) {
 
 // 4) Embeds
 function getEmbedHTML(file) {
+
+  
   if (file.host === "youtube") {
     const id = getYouTubeId(file.url);
     if (!id) return `<p>No se pudo cargar YouTube.</p>`;
@@ -199,6 +236,16 @@ function getEmbedHTML(file) {
 // 5) Ventana de archivo (embed)
 function slug(s){ return s.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-]/g,''); }
 function openFile(file) {
+
+  if (file.host === "web") {
+    if (file.url && file.url.trim() !== "") {
+      window.open(file.url, "_blank"); // abre en pestaña nueva
+    } else {
+      alert("Este enlace no tiene URL definida.");
+    }
+    return; // 🔑 MUY IMPORTANTE: no sigue, no genera ventana
+  }
+  
   const wId = `file-${(file.name || '').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-]/g,'')}`;
   let win = document.getElementById(`win-${wId}`);
   if (win) { win.style.display = 'block'; bringToFront(win); return; }
@@ -332,14 +379,346 @@ function badgeFor(file){
   return `${t} · ${h}`;
 }
 
-function openFolder(name){
-  // intenta reusar si ya existía abierta
-  if(document.getElementById(`win-${name}`)){
-    const win = document.getElementById(`win-${name}`);
-    win.style.display = 'block'; bringToFront(win); return;
+// Mapeo de iconos por host o tipo
+function iconFor(file) {
+  if (file.host === "spotify") return "🎵";
+  if (file.host === "youtube") return "🎥";
+  if (file.host === "drive") return "📸";
+  if (file.host === "web") return "🌐";
+  return "🔗";
+}
+// Marca .no-links si la tarjeta no tiene botones de link
+function markNoLinksFor(gridEl){
+  if (!gridEl) return;
+  const apply = () => {
+    gridEl.querySelectorAll('.file-card').forEach(card => {
+      const links = card.querySelector('.file-links');
+      if (links && links.children.length === 0) card.classList.add('no-links');
+      else card.classList.remove('no-links');
+    });
+  };
+  apply();
+  const mo = new MutationObserver(apply);
+  mo.observe(gridEl, { childList:true, subtree:true });
+}
+
+// Escala proporcional: calcula --scale de cada tarjeta según su ancho real
+function attachCardScaler(gridEl){
+  if (!gridEl) return;
+
+  function computeScale(card){
+    const baseW = parseFloat(getComputedStyle(card).getPropertyValue('--base-w')) || 240;
+    const w = card.clientWidth || baseW;
+    // límites opcionales para evitar escalas extremas
+    const s = Math.max(1, Math.min(1.8, w / baseW));
+    card.style.setProperty('--scale', s);
   }
+
+  function updateAll(){
+    gridEl.querySelectorAll('.file-card').forEach(computeScale);
+    fitAllNames(gridEl);
+  }
+
+  // Observa cambios de tamaño del grid y de cada tarjeta
+  const roGrid  = new ResizeObserver(updateAll);
+  const roCards = new ResizeObserver(updateAll);
+  roGrid.observe(gridEl);
+  gridEl.querySelectorAll('.file-card').forEach(c => roCards.observe(c));
+
+  // Recalcula al cargar imágenes (por si cambian anchuras internas)
+  gridEl.querySelectorAll('.file-card img').forEach(img => {
+    if (!img.complete){
+      img.addEventListener('load', updateAll, { once:true });
+      img.addEventListener('error', updateAll, { once:true });
+    }
+  });
+
+  window.addEventListener('resize', updateAll, { passive:true });
+  updateAll();
+}
+
+function fitTextToWidth(el) {
+  if (!el) return;
+
+  // Lee overrides desde data-attrs
+  const forced = el.dataset.forceSize ? parseFloat(el.dataset.forceSize) : null;      // px
+  const strict = el.dataset.forceStrict === '1';                                      // boolean
+  const minSize = el.dataset.minSize ? parseFloat(el.dataset.minSize) : 15;           // px
+
+  // Si hay tamaño forzado estricto: aplícalo y sal
+  if (forced && strict) {
+    el.style.fontSize = forced + 'px';
+    return;
+  }
+
+  // Guarda el tamaño base sólo la primera vez
+  if (!el.dataset.baseFontSize) {
+    el.dataset.baseFontSize = getComputedStyle(el).fontSize || "30px";
+  }
+
+  // Base = forzado (si existe) o el del CSS
+  const baseSize = forced ?? parseFloat(el.dataset.baseFontSize);
+  let size = baseSize;
+
+  // Ancho disponible
+  const parentWidth = (el.parentElement?.clientWidth || el.clientWidth) - 10;
+
+  // Aplica base y reduce si no cabe
+  el.style.fontSize = size + 'px';
+  while (el.scrollWidth > parentWidth && size > minSize) {
+    size -= 0.5;
+    el.style.fontSize = size + 'px';
+  }
+}
+
+
+
+function fitAllNames(gridEl){
+  gridEl.querySelectorAll('.file-name').forEach(n => {
+    // Ajusta el título como ya hacías
+    fitTextToWidth(n);
+
+    // Ahora ajusta el subtítulo si existe
+    const sub = n.parentElement?.querySelector('.file-subtitle');
+    if (!sub) return;
+
+    const hasText = !!sub.textContent && sub.textContent.trim() !== '';
+    if (!hasText) { sub.style.display = 'none'; return; }
+
+    sub.style.display = 'block';
+    const namePx = parseFloat(getComputedStyle(n).fontSize) || 16;
+    const subSize = Math.max(10, Math.round(namePx * 0.75)); // 75% del título, mínimo 10px
+
+    // estilos mínimos para que se vea fino sin tocar tu CSS
+    sub.style.fontSize = subSize + 'px';
+    sub.style.lineHeight = '1.2';
+    sub.style.opacity = '.8';
+    sub.style.marginTop = '2px';
+    sub.style.whiteSpace = 'nowrap';
+    sub.style.overflow = 'hidden';
+    sub.style.textOverflow = 'ellipsis';
+  });
+}
+
+function encodeData(obj){
+  try { return encodeURIComponent(JSON.stringify(obj)); } catch { return ''; }
+}
+function decodeData(str){
+  try { return JSON.parse(decodeURIComponent(str || '')); } catch { return null; }
+}
+
+// ============ Categorías ============
+function categoryFor(file){
+  if (file.category && String(file.category).trim() !== '') return String(file.category).trim();
+  const byKind = { song:'Música', video:'Vídeo', photo:'Fotos', project:'Proyectos', link:'Enlaces' };
+  if (file.kind && byKind[file.kind]) return byKind[file.kind];
+  if (file.host) return file.host.charAt(0).toUpperCase() + file.host.slice(1);
+  return 'Sin categoría';
+}
+function groupByCategoryStable(files){
+  const map = new Map();
+  for (const f of files){
+    const key = categoryFor(f);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(f);
+  }
+  return map;
+}
+function injectCategoryStylesOnce(){
+  const id = 'category-sections-style';
+  if (document.getElementById(id)) return;
+  const st = document.createElement('style');
+  st.id = id;
+  st.textContent = `
+    .category-section{ margin:16px 8px 14px; padding-top:10px; border-top:1px solid var(--frutiger-glass-border, rgba(168,85,247,.3)); }
+    .category-title{ display:flex; align-items:baseline; gap:8px; font-weight:600; margin:0 2px 8px 2px; opacity:.95; letter-spacing:.2px; }
+    .category-title small{ opacity:.6; font-weight:400; }
+    .category-grid{ contain: layout style paint; } /* micro-opt GPU */
+    /* Activa UNA fila con scroll horizontal si lo deseas:
+    .file-grid.row-one-line{
+      display:grid; grid-auto-flow:column; grid-auto-columns:minmax(240px, 1fr);
+      overflow-x:auto; overflow-y:visible; gap:var(--grid-gap, 12px); padding-bottom:4px; scroll-snap-type:x proximity;
+    }
+    .file-grid.row-one-line .file-card{ scroll-snap-align:start; }
+    */
+  `;
+  document.head.appendChild(st);
+}
+
+// ============ Tipografía: ajuste O(log n) ============
+function fitTextToWidth(el){
+  if (!el) return;
+
+  const forced = el.dataset.forceSize ? parseFloat(el.dataset.forceSize) : null;
+  const strict = el.dataset.forceStrict === '1';
+  const minSizeAttr = el.dataset.minSize ? parseFloat(el.dataset.minSize) : NaN;
+  const MIN = Number.isFinite(minSizeAttr) ? minSizeAttr : 15;
+
+  if (!el.dataset.baseFontSize) {
+    el.dataset.baseFontSize = getComputedStyle(el).fontSize || '30px';
+  }
+  const base = forced ?? parseFloat(el.dataset.baseFontSize) ;
+
+  if (forced && strict){
+    el.style.fontSize = forced + 'px';
+    return;
+  }
+
+  // Búsqueda binaria para un único reflow por paso (tope ~8 iteraciones)
+  let lo = MIN, hi = base, best = MIN;
+  // Si base < MIN, sube límites
+  if (hi < lo) { hi = lo; }
+  const parentWidth = (el.parentElement?.clientWidth || el.clientWidth) - 10;
+
+  // Si con base ya cabe, aplícalo
+  el.style.fontSize = base + 'px';
+  if (el.scrollWidth <= parentWidth){
+    return;
+  }
+
+  for (let i=0; i<8; i++){
+    const mid = (lo + hi) / 2;
+    el.style.fontSize = mid + 'px';
+    if (el.scrollWidth <= parentWidth){
+      best = mid; lo = mid; // cabe → intenta más grande
+    } else {
+      hi = mid; // no cabe → reduce
+    }
+  }
+  el.style.fontSize = Math.max(MIN, Math.floor(best * 10)/10) + 'px';
+}
+
+function fitAllNames(scopeEl){
+  scopeEl.querySelectorAll('.file-name').forEach(n => {
+    fitTextToWidth(n);
+
+    const sub = n.parentElement?.querySelector('.file-subtitle');
+    if (!sub) return;
+
+    const hasText = !!sub.textContent && sub.textContent.trim() !== '';
+    if (!hasText) { sub.style.display = 'none'; return; }
+
+    sub.style.display = 'block';
+    const namePx = parseFloat(getComputedStyle(n).fontSize) || 16;
+    const subSize = Math.max(10, Math.round(namePx * 0.75));
+    sub.style.fontSize = subSize + 'px';
+    sub.style.lineHeight = '1.2';
+    sub.style.opacity = '.8';
+    sub.style.marginTop = '2px';
+    sub.style.whiteSpace = 'nowrap';
+    sub.style.overflow = 'hidden';
+    sub.style.textOverflow = 'ellipsis';
+  });
+}
+
+// ============ Escalado de tarjetas (optimizado) ============
+function attachCardScaler(gridEl){
+  if (!gridEl) return;
+
+  const computeScaleFor = (card) => {
+    const styles = getComputedStyle(card);
+    const baseW = parseFloat(styles.getPropertyValue('--base-w')) || 240;
+    const w = card.clientWidth || baseW;
+    const s = Math.max(1, Math.min(1.8, w / baseW));
+    card.style.setProperty('--scale', s);
+  };
+
+  const updateAll = () => {
+    // Lote: un único rAF para todas
+    requestAnimationFrame(() => {
+      gridEl.querySelectorAll('.file-card').forEach(computeScaleFor);
+      fitAllNames(gridEl);
+    });
+  };
+
+  // Observa SOLO el grid (los cambios internos disparan un único callback)
+  const ro = new ResizeObserver(updateAll);
+  ro.observe(gridEl);
+
+  // Si entran/filtran tarjetas dinámicamente, observa el DOM
+  const mo = new MutationObserver(() => updateAll());
+  mo.observe(gridEl, { childList:true, subtree:false });
+
+  // Imágenes que cambian layout
+  gridEl.querySelectorAll('img').forEach(img => {
+    if (!img.complete){
+      img.addEventListener('load', updateAll, { once:true });
+      img.addEventListener('error', updateAll, { once:true });
+    }
+  });
+
+  updateAll();
+}
+
+// ============ Tarjeta de archivo (sin listeners por botón; delegación) ============
+function buildFileCard(file){
+  const card = document.createElement('div');
+  card.className = 'file-card';
+  card.dataset.file = encodeData(file);
+
+  if (file.kind === "project" && file.links) {
+    card.innerHTML = `
+      <div class="file-thumb-wrap"><img class="file-thumb" alt="${file.name}"></div>
+      <div class="file-meta">
+        <span class="file-name">${file.name}</span>
+        <span class="file-subtitle"></span>
+        <div class="file-links"></div>
+      </div>`;
+    ensureThumb(file, card.querySelector('.file-thumb'));
+
+    const linksDiv = card.querySelector('.file-links');
+    const frag = document.createDocumentFragment();
+    for (const link of file.links){
+      const btn = document.createElement('button');
+      btn.className = 'file-link-btn';
+      btn.dataset.link = encodeData(link); // ← delegación
+      btn.innerHTML = `${iconFor(link)} ${link.label}`;
+      frag.appendChild(btn);
+    }
+    linksDiv.appendChild(frag);
+
+    const subEl = card.querySelector('.file-subtitle');
+    if (file.subtitle) subEl.textContent = file.subtitle; else subEl.style.display = 'none';
+
+  } else {
+    card.innerHTML = `
+      <div class="file-thumb-wrap"><img class="file-thumb" alt="${file.name}"></div>
+      <div class="file-meta">
+        <span class="file-name">${file.name}</span>
+        <span class="file-subtitle"></span>
+        <div class="file-links"></div>
+      </div>`;
+    ensureThumb(file, card.querySelector('.file-thumb'));
+    // (dblclick lo capturamos por delegación arriba en openFolder)
+
+    const subEl = card.querySelector('.file-subtitle');
+    if (file.subtitle) subEl.textContent = file.subtitle; else subEl.style.display = 'none';
+  }
+
+  // Ajuste de título (usa data-* si viene configurado)
+  const nameEl = card.querySelector('.file-name');
+  if (file.titleSize)       nameEl.dataset.forceSize   = String(file.titleSize);
+  if (file.titleSizeStrict) nameEl.dataset.forceStrict = '1';
+  if (file.minTitleSize)    nameEl.dataset.minSize     = String(file.minTitleSize);
+  fitTextToWidth(nameEl);
+
+  // Wrap en .file-card-inner sin perder nodos
+  const inner = document.createElement('div');
+  inner.className = 'file-card-inner';
+  while (card.firstChild) inner.appendChild(card.firstChild);
+  card.appendChild(inner);
+
+  return card;
+}
+
+// ============ openFolder (render por categorías + delegación de eventos) ============
+function openFolder(name){
+  const existing = document.getElementById(`win-${name}`);
+  if (existing){ existing.style.display = 'block'; bringToFront(existing); return; }
+
   const folder = folders.find(f => f.name === name);
   const files = folder?.files ?? [];
+  injectCategoryStylesOnce();
 
   const windowEl = document.createElement('div');
   windowEl.className = 'window';
@@ -358,35 +737,78 @@ function openFolder(name){
   const content = document.createElement('div');
   content.className = 'window-content';
 
-  if (!files.length) {
+  if (!files.length){
     content.innerHTML = `
       <h3>📁 ${name}</h3>
       <p style="margin-top:12px;opacity:.8">
         Esta carpeta está vacía. Añade archivos en <code>filesByFolder["${name}"]</code>.
       </p>`;
   } else {
-    const grid = document.createElement('div');
-    grid.className = 'file-grid';
-    files.forEach(file => {
-      const card = document.createElement('div');
-      card.className = 'file-card';
-      card.innerHTML = `
-        <div class="file-thumb-wrap">
-          <img class="file-thumb" alt="${file.name}">
-          <div class="file-badge">${badgeFor(file)}</div>
-        </div>
-        <div class="file-meta"><span class="file-name">${file.name}</span></div>
-      `;
-      ensureThumb(file, card.querySelector('.file-thumb'));
-      card.addEventListener('dblclick',()=> openFile(file));
-      grid.appendChild(card);
+    const sectionsWrap = document.createElement('div');
+    sectionsWrap.className = 'category-sections-wrap';
+
+    const grouped = groupByCategoryStable(files);
+    const fragSections = document.createDocumentFragment();
+
+    grouped.forEach((arr, catName) => {
+      const section = document.createElement('section');
+      section.className = 'category-section';
+      section.dataset.category = catName;
+
+      const title = document.createElement('div');
+      title.className = 'category-title';
+      title.innerHTML = `${catName} <small>(${arr.length})</small>`;
+      section.appendChild(title);
+
+      const grid = document.createElement('div');
+      grid.className = 'file-grid category-grid';
+      // grid.classList.add('row-one-line'); // ← activa fila única con scroll si quieres
+
+      // Lote de tarjetas
+      const fragCards = document.createDocumentFragment();
+      for (const file of arr){
+        const card = buildFileCard(file);
+        fragCards.appendChild(card);
+      }
+      grid.appendChild(fragCards);
+
+      section.appendChild(grid);
+      fragSections.appendChild(section);
+
+      // Post-render: marcado y escalado
+      markNoLinksFor(grid);
+      attachCardScaler(grid);
     });
-    content.appendChild(grid);
+
+    sectionsWrap.appendChild(fragSections);
+    content.appendChild(sectionsWrap);
+
+    // === Delegación de eventos ===
+    // 1) Click en botones de link (proyectos)
+    content.addEventListener('click', (ev) => {
+      const btn = ev.target.closest('.file-link-btn');
+      if (!btn) return;
+      const link = decodeData(btn.dataset.link);
+      if (link) openFile(link);
+    });
+
+    // 2) Doble click en tarjeta genérica / foto / vídeo / song
+    content.addEventListener('dblclick', (ev) => {
+      const card = ev.target.closest('.file-card');
+      if (!card) return;
+      const file = decodeData(card.dataset.file);
+      if (!file) return;
+      // Evita que los project abran dos veces si se hace dblclick encima de los botones
+      if (file.kind === 'project' && Array.isArray(file.links)) return;
+      openFile(file);
+    });
   }
 
-  windowEl.appendChild(header); windowEl.appendChild(content);
+  windowEl.appendChild(header);
+  windowEl.appendChild(content);
   document.body.appendChild(windowEl);
 
+  // Tamaño/posición inicial
   const W = Math.min(860, Math.floor(window.innerWidth * 0.9));
   const H = Math.min(580, Math.floor(window.innerHeight * 0.8));
   windowEl.style.left = ((window.innerWidth - W)/2) + 'px';
@@ -395,13 +817,11 @@ function openFolder(name){
   windowEl.style.height = H + 'px';
   windowEl.style.display = 'block';
 
-  bringToFront(windowEl); addToTaskbar(name);
+  bringToFront(windowEl);
+  addToTaskbar(name);
 
-  header.querySelector('.close-btn').addEventListener('click',()=>{
-    windowEl.remove();
-    const taskIcon = document.getElementById(`task-${name}`);
-    if (taskIcon) taskIcon.remove();
-  });
+  // Botones
+  header.querySelector('.close-btn').addEventListener('click',()=> windowEl.remove());
   header.querySelector('.min-btn').addEventListener('click',()=> windowEl.style.display='none');
 
   let maximized = false;
@@ -424,10 +844,12 @@ function openFolder(name){
   });
 
   header.addEventListener('mousedown', e => {
-  if (e.target.closest('.window-buttons')) return;
-  startDrag(windowEl /* o win */, e);
+    if (e.target.closest('.window-buttons')) return;
+    startDrag(windowEl, e);
   });
 }
+
+
 
 // 7) Inyecta la lista de archivos al cargar
 document.addEventListener('DOMContentLoaded', () => {

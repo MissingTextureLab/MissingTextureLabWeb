@@ -1,5 +1,6 @@
-/* ===== desktop-assistant.js (bola + fondo morado suave) =====
+/* ===== desktop-assistant.js (solo chat vía Vercel AI SDK) =====
    Requiere (si existen): startDrag(win, e), bringToFront(win)
+   Backend necesario: /api/chat (Next.js leyendo tus .md)
 */
 (() => {
   // ---------- Estilos ----------
@@ -27,7 +28,7 @@
     background: transparent;
   }
 
-  /* Panel del ojo: fondo morado suave + bola centrada */
+  /* Panel del ojo */
   .assistant-eye-wrap {
     grid-row: 1 / span 2; grid-column: 1 / 2;
     display: grid; place-items: center; padding: 0;
@@ -36,21 +37,10 @@
       linear-gradient(180deg, rgba(168,85,247,0.12), rgba(76,29,149,0.18));
     border: none; overflow: visible; position: relative;
   }
+  .eye-box { width: 90%; max-width: 220px; aspect-ratio: 1/1; display: grid; place-items: center; overflow: visible; }
+  .assistant-eye { width: 100%; height: 100%; display: block; overflow: visible; background: transparent !important; }
 
-  .eye-box {
-    width: 90%; max-width: 220px; aspect-ratio: 1/1;
-    display: grid; place-items: center; overflow: visible;
-  }
-
-  .assistant-eye {
-  width: 100%;
-  height: 100%;
-  display: block;
-  overflow: visible;
-  background: transparent !important;  /* 👈 sin fondo del SVG */
-}
-
-
+  /* Burbuja (historial/stream de respuesta) */
   .assistant-bubble {
     grid-column: 2 / 3; grid-row: 1 / 2;
     padding: 14px; background: rgba(255,255,255,0.88);
@@ -59,24 +49,72 @@
   }
   .assistant-typing { white-space: pre-wrap; }
 
+  /* Controles: solo input + botón enviar */
   .assistant-controls {
     grid-column: 2 / 3; grid-row: 2 / 3;
     display: flex; align-items: center; gap: 8px; padding: 10px 12px;
     background: rgba(168,85,247,0.08); border: none;
   }
-  .assistant-chip {
-    font-size: 11px; font-weight: 700; padding: 6px 8px;
-    background: var(--chrome-silver); border: 1px solid var(--chrome-dark);
-    color: var(--frutiger-dark); cursor: pointer; user-select: none;
+  .assistant-input {
+    flex: 1; min-width: 160px;
+    border: 1px solid var(--chrome-dark); background: #fff; color: #111; padding: 8px 10px;
+    font-size: 13px; line-height: 1.2;
   }
-  .assistant-chip:hover { background: var(--frutiger-light); color: #fff; }
-  .assistant-chip:active { transform: translateY(0); }
+  .assistant-send {
+    font-size: 12px; font-weight: 700; padding: 8px 10px;
+    background: var(--frutiger-purple); color: #fff; border: none; cursor: pointer;
+  }
+  .assistant-send[disabled] { opacity: .6; cursor: not-allowed; }
   `;
   document.head.appendChild(style);
 
   // ---------- Utils ----------
   const has = (fnName) => typeof window[fnName] === 'function';
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+  // ---------- Estado de chat ----------
+  const Chat = { history: [], sending: false, bubbleEl: null, inputEl: null, sendBtn: null };
+
+  async function streamFromVercel(messages, onToken) {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages }),
+    });
+    if (!res.ok || !res.body) throw new Error('Chat API no disponible (' + res.status + ')');
+    const reader = res.body.getReader(); const decoder = new TextDecoder();
+    let full = '';
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      full += chunk; onToken && onToken(chunk, full);
+    }
+    return full;
+  }
+
+  async function ask(prompt) {
+    if (!prompt || Chat.sending) return;
+    Chat.sending = true;
+    if (Chat.inputEl) Chat.inputEl.value = '';
+    if (Chat.sendBtn) Chat.sendBtn.disabled = true;
+    if (Chat.bubbleEl) Chat.bubbleEl.textContent = '';
+
+    Chat.history.push({ role: 'user', content: String(prompt) });
+
+    try {
+      const answer = await streamFromVercel(Chat.history, (_, full) => {
+        if (Chat.bubbleEl) Chat.bubbleEl.textContent = full;
+      });
+      Chat.history.push({ role: 'assistant', content: answer });
+    } catch (err) {
+      console.error(err);
+      say('❌ Error de chat. ¿Está configurado /api/chat y la clave?');
+    } finally {
+      Chat.sending = false;
+      if (Chat.sendBtn) Chat.sendBtn.disabled = false;
+    }
+  }
 
   // ---------- Crear ventana ----------
   function createAssistantWindow() {
@@ -86,7 +124,7 @@
 
     const header = document.createElement('div');
     header.className = 'window-header';
-    header.innerHTML = `<span>Asistente · MissingTexture</span><div class="window-buttons"></div>`;
+    header.innerHTML = `<span>Leandro</span><div class="window-buttons"></div>`;
 
     const content = document.createElement('div');
     content.className = 'window-content';
@@ -106,13 +144,25 @@
     const typing = document.createElement('div');
     typing.className = 'assistant-typing';
     bubble.appendChild(typing);
+    Chat.bubbleEl = typing;
 
     const controls = document.createElement('div');
     controls.className = 'assistant-controls';
-    const chip1 = document.createElement('div'); chip1.className = 'assistant-chip'; chip1.textContent = 'Consejo';
-    const chip2 = document.createElement('div'); chip2.className = 'assistant-chip'; chip2.textContent = 'Estado';
-    const chip3 = document.createElement('div'); chip3.className = 'assistant-chip'; chip3.textContent = 'Ayuda';
-    controls.appendChild(chip1); controls.appendChild(chip2); controls.appendChild(chip3);
+
+    // Solo input + enviar
+    const input = document.createElement('input');
+    input.className = 'assistant-input';
+    input.type = 'text';
+    input.placeholder = 'Escríbeme sobre tu portfolio…';
+    Chat.inputEl = input;
+
+    const send = document.createElement('button');
+    send.className = 'assistant-send';
+    send.textContent = 'Enviar';
+    Chat.sendBtn = send;
+
+    controls.appendChild(input);
+    controls.appendChild(send);
 
     root.appendChild(eyeWrap);
     root.appendChild(bubble);
@@ -135,21 +185,22 @@
 
     setupEyeTracking(win);
 
-    chip1.addEventListener('click', () => Assistant.tip());
-    chip2.addEventListener('click', () => Assistant.say(getStatusMessage()));
-    chip3.addEventListener('click', () => Assistant.say('Doble click abre archivos. Arrastra ventanas desde su barra de título. Yo te doy tips cuando quieras.'));
+    // Eventos de chat
+    send.addEventListener('click', () => ask(input.value.trim()));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(input.value.trim()); }
+    });
 
-    Assistant.say('Solo la bola, con fondo morado suave 💜.');
+    say('Hola, soy tu asistente. Pídeme info sobre tu trabajo y te respondo con lo que hay en tu portfolio 💜.');
     return win;
   }
 
-  // ---------- SVG: SOLO la bola ----------
-function getEyeSVG() {
-  const cx = 80, cy = 80, irisR = 26;
-  return `
+  // ---------- SVG: ojo ----------
+  function getEyeSVG() {
+    const cx = 80, cy = 80, irisR = 26;
+    return `
   <svg class="assistant-eye" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img">
     <defs>
-      <!-- Gradiente del iris (morado suave) -->
       <radialGradient id="iris-grad" cx="50%" cy="50%" r="50%">
         <stop offset="0%"  stop-color="#b380ff"/>
         <stop offset="35%" stop-color="#a45cf7"/>
@@ -157,17 +208,14 @@ function getEyeSVG() {
         <stop offset="100%" stop-color="#4c1d95"/>
       </radialGradient>
     </defs>
-
-    <!-- SOLO la bola: sin sombras, sin anillo, sin filtros -->
     <g id="eyeball" style="mix-blend-mode:normal;">
       <circle id="iris"  cx="${cx}" cy="${cy}" r="${irisR}" fill="url(#iris-grad)" stroke="none"/>
       <circle id="pupil" cx="${cx}" cy="${cy}" r="10.5" fill="var(--frutiger-dark)" stroke="none"/>
-      <circle id="highlight1" cx="${cx+9}" cy="${cy-8}" r="" fill="rgba(255,255,255,0.9)" stroke="none"/>
+      <circle id="highlight1" cx="${cx+9}" cy="${cy-8}" r="3.2" fill="rgba(255,255,255,0.9)" stroke="none"/>
       <circle id="highlight2" cx="${cx}" cy="${cy}" r="1.6" fill="rgba(255,255,255,0.65)" stroke="none"/>
     </g>
   </svg>`;
-}
-
+  }
 
   // ---------- Seguimiento de mirada ----------
   function setupEyeTracking(win) {
@@ -207,9 +255,8 @@ function getEyeSVG() {
     window.addEventListener('mousemove', (e) => lookAt(e.clientX, e.clientY));
   }
 
-  // ---------- Mensajes ----------
-  const queue = [];
-  let typing = false;
+  // ---------- Mensajes locales (cola con tipeo) ----------
+  const queue = []; let typing = false;
   function typeInto(el, text, speed = 16) {
     return new Promise((resolve) => {
       el.textContent = ''; let i = 0; typing = true;
@@ -228,27 +275,10 @@ function getEyeSVG() {
     await typeInto(bubble, msg); setTimeout(() => processQueue(bubble), 250);
   }
 
-  // ---------- Consejos ----------
-  let tips = [
-    '💜 Mantén tu escritorio ordenado: arrastra iconos y evita solaparlos.',
-    '💜 Mueve ventanas desde la barra de título; Spotify es tamaño fijo.',
-    '💜 Puedes centrar una ventana abriéndola de nuevo desde su carpeta.',
-    '💜 Usa miniaturas para reconocer contenido más rápido.',
-  ];
-  function setTips(arr) { tips = Array.isArray(arr) && arr.length ? arr : tips; }
-  function tip(msg) { say(msg || tips[Math.floor(Math.random() * tips.length)]); }
-
-  function getStatusMessage() {
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2,'0');
-    const mm = String(now.getMinutes()).padStart(2,'0');
-    return `Son las ${hh}:${mm}. Todo estable. Ventanas activas listas.`;
-  }
-
   // ---------- API pública ----------
   const Assistant = {
     ensure() { return document.getElementById('win-assistant') || createAssistantWindow(); },
-    say, tip, setTips,
+    say, ask,
   };
   window.Assistant = Assistant;
 
