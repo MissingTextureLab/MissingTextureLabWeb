@@ -565,3 +565,4 @@ document.addEventListener('DOMContentLoaded', () => {
   enterScreensaver(true);
 
 });
+requestAnimationFrame(()=>document.querySelectorAll('.category-grid').forEach(g=>fitAllNames(g)));

@@ -470,6 +470,115 @@ function fitTextToWidth(el) {
     el.style.fontSize = size + 'px';
   }
 }
+// ---- Subtítulo por defecto (si no lo pones tú) ----
+function prettyHost(host){
+  const map = { youtube:'YouTube', spotify:'Spotify', drive:'Drive', web:'Web' };
+  if (!host) return '—';
+  return map[host] || (host[0].toUpperCase() + host.slice(1));
+}
+function prettyKind(kind){
+  const map = { song:'Canción', video:'Vídeo', photo:'Foto', project:'Proyecto', link:'Enlace' };
+  return map[kind] || 'Ítem';
+}
+function computeSubtitle(file){
+  if (file.subtitle && String(file.subtitle).trim() !== '') return file.subtitle.trim();
+  const parts = [];
+  if (file.category && String(file.category).trim() !== '') parts.push(String(file.category).trim());
+  else parts.push(prettyKind(file.kind));
+  if (file.host) parts.push(prettyHost(file.host));
+  return parts.join(' · ');
+}
+
+// ---- Ajuste de título+subtítulo sin cortes (ancho y altura) ----
+function fitNamesInCard(card){
+  const nameEl = card.querySelector('.file-name');
+  const subEl  = card.querySelector('.file-subtitle');
+  const meta   = card.querySelector('.file-meta');
+  if (!nameEl || !subEl || !meta) return;
+
+  // Tamaños base desde el CSS (solo la primera vez)
+  if (!nameEl.dataset.baseFontSize) {
+    nameEl.dataset.baseFontSize = getComputedStyle(nameEl).fontSize || '40px';
+  }
+  const forced = nameEl.dataset.forceSize ? parseFloat(nameEl.dataset.forceSize) : null;
+  const strict = nameEl.dataset.forceStrict === '1';
+  const minAttr = nameEl.dataset.minSize ? parseFloat(nameEl.dataset.minSize) : NaN;
+  const MIN = Number.isFinite(minAttr) ? minAttr : 12;
+  const BASE = forced ?? parseFloat(nameEl.dataset.baseFontSize);
+
+  // Función utilitaria
+  const parentWidth = () => (nameEl.parentElement?.clientWidth || nameEl.clientWidth) - 6;
+  const fitsMeta = () => meta.scrollHeight <= meta.clientHeight + 1;
+
+  // Estado inicial: 1 línea, tamaño base
+  nameEl.style.whiteSpace = 'nowrap';
+  nameEl.style.fontSize = BASE + 'px';
+
+  if (strict && forced) {
+    // Solo ajusta subtítulo relativo y salir
+    const namePx = parseFloat(getComputedStyle(nameEl).fontSize) || 16;
+    subEl.style.display = subEl.textContent.trim() ? 'block' : 'none';
+    subEl.style.whiteSpace = 'normal';
+    subEl.style.overflow = 'visible';
+    subEl.style.textOverflow = 'clip';
+    subEl.style.fontSize = Math.max(10, Math.round(namePx * 0.78)) + 'px';
+    subEl.style.lineHeight = '1.2';
+    subEl.style.marginTop = '2px';
+    return;
+  }
+
+  // 1) ENCAJAR EN ANCHO (1 línea)
+  if (nameEl.scrollWidth > parentWidth()){
+    let lo = MIN, hi = BASE, best = lo;
+    for (let i=0; i<8; i++){
+      const mid = (lo + hi) / 2;
+      nameEl.style.fontSize = mid + 'px';
+      if (nameEl.scrollWidth <= parentWidth()){ best = mid; lo = mid; } else { hi = mid; }
+    }
+    nameEl.style.fontSize = Math.max(MIN, Math.floor(best*10)/10) + 'px';
+  }
+
+  // 2) SUBTÍTULO relativo al título
+  const namePxNow = parseFloat(getComputedStyle(nameEl).fontSize) || 16;
+  subEl.style.display = subEl.textContent.trim() ? 'block' : 'none';
+  subEl.style.whiteSpace = 'normal';
+  subEl.style.overflow = 'visible';
+  subEl.style.textOverflow = 'clip';
+  subEl.style.fontSize = Math.max(10, Math.round(namePxNow * 0.78)) + 'px';
+  subEl.style.lineHeight = '1.2';
+  subEl.style.marginTop = '2px';
+
+  // 3) ENCAJAR EN ALTURA (si el bloque meta se desborda)
+  if (!fitsMeta()){
+    // permitir wrap en el título para ganar altura efectiva
+    nameEl.style.whiteSpace = 'normal';
+
+    // intenta con tamaño base (más legible) y baja hasta que quepa
+    nameEl.style.fontSize = BASE + 'px';
+
+    let lo = MIN, hi = BASE, best = lo;
+    for (let i=0; i<10; i++){
+      const mid = (lo + hi) / 2;
+      nameEl.style.fontSize = mid + 'px';
+      subEl.style.fontSize = Math.max(10, Math.round(mid * 0.78)) + 'px';
+      if (fitsMeta()){ best = mid; lo = mid; } else { hi = mid; }
+    }
+
+    // Ajuste final
+    nameEl.style.fontSize = Math.max(MIN, Math.floor(best*10)/10) + 'px';
+
+    // Si aún no cabe (titular extremo), última reducción hasta MIN
+    if (!fitsMeta()){
+      nameEl.style.fontSize = MIN + 'px';
+      subEl.style.fontSize = Math.max(10, Math.round(MIN * 0.78)) + 'px';
+    }
+  }
+}
+
+// ---- Reemplaza tu fitAllNames por este (llama al de arriba por tarjeta) ----
+function fitAllNames(scopeEl){
+  scopeEl.querySelectorAll('.file-card').forEach(card => fitNamesInCard(card));
+}
 
 
 
@@ -656,57 +765,52 @@ function buildFileCard(file){
   card.className = 'file-card';
   card.dataset.file = encodeData(file);
 
-  if (file.kind === "project" && file.links) {
-    card.innerHTML = `
-      <div class="file-thumb-wrap"><img class="file-thumb" alt="${file.name}"></div>
-      <div class="file-meta">
-        <span class="file-name">${file.name}</span>
-        <span class="file-subtitle"></span>
-        <div class="file-links"></div>
-      </div>`;
-    ensureThumb(file, card.querySelector('.file-thumb'));
+  // Estructura común
+  card.innerHTML = `
+    <div class="file-thumb-wrap"><img class="file-thumb" alt="${file.name}"></div>
+    <div class="file-meta">
+      <span class="file-name">${file.name}</span>
+      <span class="file-subtitle"></span>
+      <div class="file-links"></div>
+    </div>`;
 
-    const linksDiv = card.querySelector('.file-links');
+  // Thumbnail
+  ensureThumb(file, card.querySelector('.file-thumb'));
+
+  // Subtítulo: usa el tuyo o generamos uno; lo persistimos en el objeto
+  const subEl = card.querySelector('.file-subtitle');
+  const computedSub = computeSubtitle(file);
+  subEl.textContent = computedSub;
+  file.subtitle = computedSub;
+
+  // Links (solo en project con links)
+  const linksDiv = card.querySelector('.file-links');
+  if (file.kind === "project" && Array.isArray(file.links)){
     const frag = document.createDocumentFragment();
     for (const link of file.links){
       const btn = document.createElement('button');
       btn.className = 'file-link-btn';
-      btn.dataset.link = encodeData(link); // ← delegación
+      btn.dataset.link = encodeData(link);
       btn.innerHTML = `${iconFor(link)} ${link.label}`;
       frag.appendChild(btn);
     }
     linksDiv.appendChild(frag);
-
-    const subEl = card.querySelector('.file-subtitle');
-    if (file.subtitle) subEl.textContent = file.subtitle; else subEl.style.display = 'none';
-
-  } else {
-    card.innerHTML = `
-      <div class="file-thumb-wrap"><img class="file-thumb" alt="${file.name}"></div>
-      <div class="file-meta">
-        <span class="file-name">${file.name}</span>
-        <span class="file-subtitle"></span>
-        <div class="file-links"></div>
-      </div>`;
-    ensureThumb(file, card.querySelector('.file-thumb'));
-    // (dblclick lo capturamos por delegación arriba en openFolder)
-
-    const subEl = card.querySelector('.file-subtitle');
-    if (file.subtitle) subEl.textContent = file.subtitle; else subEl.style.display = 'none';
   }
 
-  // Ajuste de título (usa data-* si viene configurado)
+  // Overrides opcionales por-item
   const nameEl = card.querySelector('.file-name');
   if (file.titleSize)       nameEl.dataset.forceSize   = String(file.titleSize);
   if (file.titleSizeStrict) nameEl.dataset.forceStrict = '1';
   if (file.minTitleSize)    nameEl.dataset.minSize     = String(file.minTitleSize);
-  fitTextToWidth(nameEl);
 
-  // Wrap en .file-card-inner sin perder nodos
+  // Wrap interior (mantiene tu sistema de escala)
   const inner = document.createElement('div');
   inner.className = 'file-card-inner';
   while (card.firstChild) inner.appendChild(card.firstChild);
   card.appendChild(inner);
+
+  // Ajuste inicial
+  fitNamesInCard(card);
 
   return card;
 }
@@ -903,3 +1007,6 @@ function startDrag(win, e) {
   document.addEventListener('mousemove', onMouseMove);
   document.addEventListener('mouseup', onMouseUp);
 }
+window.fitAllNames = function(scopeEl){
+  scopeEl.querySelectorAll('.file-card').forEach(card => fitNamesInCard(card));
+};

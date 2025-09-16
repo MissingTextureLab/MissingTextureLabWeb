@@ -548,7 +548,7 @@ body::before{
 
 .file-meta{ display:flex; flex-direction:column; gap:6px; min-height:0; }
 .file-name{
-  overflow: hidden;     /* nunca salta a 2 líneas */
+  overflow: visible;
   text-overflow: clip;  /* o 'ellipsis' si quieres … */
   /* EJEMPLO de base; si ya lo tienes, no lo dupliques */
   font-size: 40px;
@@ -580,9 +580,9 @@ body::before{
   line-height: 1.2;
   opacity: .8;
   margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis; /* recorte elegante si no cabe */
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip; /* recorte elegante si no cabe */
 }
 
 .file-subtitle:empty { display: none; }
@@ -695,3 +695,61 @@ body.dragging .icon {
   border-radius: 0 !important;
 }
 
+/* ====== PRO LAYOUT PATCH (cards) ====== */
+:root{
+  --card-base-w: 240;   /* ancho de diseño de la tarjeta (coincide con minmax del grid) */
+  --card-base-h: 270;   /* ↑ más alto que 220 para dar aire a título+subtítulo+links */
+}
+
+/* usa las nuevas bases sin romper tu sistema de escala */
+.file-card{ --base-w: var(--card-base-w); --base-h: var(--card-base-h); }
+
+.file-card-inner{
+  /* thumb | meta (título+subtítulo) | links */
+  grid-template-rows: 150px 1fr auto;
+  gap: 8px;
+  padding: 12px;
+}
+
+/* cuando NO hay links, la imagen puede ser un poco más alta */
+.file-card.no-links .file-card-inner{
+  grid-template-rows: 190px 1fr;
+}
+
+/* meta flexible pero sin cortes internos */
+.file-meta{ min-height: 0; }
+
+/* tipografías sobrias y legibles */
+.file-name{
+  font-size: 24px;      /* base cómoda; tu JS la reduce si no cabe */
+  line-height: 1.15;
+  letter-spacing: .2px;
+  overflow: visible;    /* dejamos que el JS gestione el ajuste */
+  text-overflow: clip;
+  white-space: nowrap;  /* 1 línea por defecto; el JS la abre si hace falta */
+}
+
+.file-subtitle{
+  font-size: 15px;
+  line-height: 1.25;
+  margin-top: 4px;
+  opacity: .85;
+  white-space: normal;  /* puede partir en varias líneas */
+  overflow: visible;
+  text-overflow: clip;
+}
+
+/* enlaces con separación y divisor fino (look más “UI”) */
+.file-links{
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--frutiger-glass-border);
+}
+.file-link-btn{
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+/* un pelín más de respiración entre tarjetas */
+.file-grid{ gap: 16px; }
