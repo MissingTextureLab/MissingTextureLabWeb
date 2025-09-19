@@ -196,9 +196,10 @@
   }
 
   // ---------- SVG: ojo ----------
-  function getEyeSVG() {
-    const cx = 80, cy = 80, irisR = 26;
-    return `
+// ---------- SVG: ojo (con clipPath para párpados) ----------
+function getEyeSVG() {
+  const cx = 80, cy = 80, irisR = 26;
+  return `
   <svg class="assistant-eye" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img">
     <defs>
       <radialGradient id="iris-grad" cx="50%" cy="50%" r="50%">
@@ -207,53 +208,168 @@
         <stop offset="70%" stop-color="#7a3ee3"/>
         <stop offset="100%" stop-color="#4c1d95"/>
       </radialGradient>
+
+      <!-- Abertura del párpado: animamos ry para parpadear/dormir -->
+      <clipPath id="aperture">
+        <ellipse id="apertureEllipse" cx="${cx}" cy="${cy}" rx="60" ry="60"></ellipse>
+      </clipPath>
     </defs>
-    <g id="eyeball" style="mix-blend-mode:normal;">
+
+    <!-- Todo el ojo va “recortado” por la apertura -->
+    <g id="eyeball" clip-path="url(#aperture)" style="mix-blend-mode:normal;">
       <circle id="iris"  cx="${cx}" cy="${cy}" r="${irisR}" fill="url(#iris-grad)" stroke="none"/>
       <circle id="pupil" cx="${cx}" cy="${cy}" r="10.5" fill="var(--frutiger-dark)" stroke="none"/>
       <circle id="highlight1" cx="${cx+9}" cy="${cy-8}" r="3.2" fill="rgba(255,255,255,0.9)" stroke="none"/>
-      <circle id="highlight2" cx="${cx}" cy="${cy}" r="1.6" fill="rgba(255,255,255,0.65)" stroke="none"/>
+      <circle id="highlight2" cx="${cx}"   cy="${cy}"   r="1.6" fill="rgba(255,255,255,0.65)" stroke="none"/>
     </g>
   </svg>`;
+}
+
+// ---------- Seguimiento del ojo SIN parpadeo (iris + pupila siguen siempre) ----------
+// ---------- Seguimiento del ojo (suave + 100% dirección al puntero) ----------
+function setupEyeTracking(win) {
+  const svg     = win.querySelector('.assistant-eye');
+  const eyeball = svg?.querySelector('#eyeball');
+  const iris    = svg?.querySelector('#iris');
+  const pupil   = svg?.querySelector('#pupil');
+  const h1      = svg?.querySelector('#highlight1');
+  const h2      = svg?.querySelector('#highlight2');
+  const ap      = svg?.querySelector('#apertureEllipse');
+  if (!svg || !eyeball || !iris || !pupil) return;
+
+  // Ojo siempre abierto (si usas párpado)
+  if (ap) ap.setAttribute('ry', '60');
+
+  // Centro y radios en coordenadas del viewBox (tu SVG es 160x160, centro 80/80)
+  const CX = 80, CY = 80;
+  const irisR0  = parseFloat(iris.getAttribute('r'))  || 26;
+  const pupilR0 = parseFloat(pupil.getAttribute('r')) || 10.5;
+
+  // Límites de desplazamiento (en unidades del SVG, no en px)
+  const MAX_IRIS_OFFSET  = 22; // cuánto puede moverse el centro del iris
+  const MAX_PUPIL_OFFSET = 30; // la pupila puede ir un poco más lejos
+
+  // Muelles (subamortiguados, pupila algo más rápida)
+  const K_IRIS = 36, C_IRIS = 14;
+  const K_PUP  = 48, C_PUP  = 18;
+
+  // Dilatación por velocidad del puntero
+  const PUP_MIN = 8.8, PUP_MAX = 12.8, PUP_DILATE_V = 0.45;
+
+  // Helpers
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  function springStep(state, target, k, c, dt) {
+    state.vx += (k * (target.x - state.x) - c * state.vx) * dt;
+    state.vy += (k * (target.y - state.y) - c * state.vy) * dt;
+    state.x  += state.vx * dt;
+    state.y  += state.vy * dt;
   }
 
-  // ---------- Seguimiento de mirada ----------
-  function setupEyeTracking(win) {
-    const svg = win.querySelector('.assistant-eye');
-    const iris = svg?.querySelector('#iris');
-    const pupil = svg?.querySelector('#pupil');
-    const h1 = svg?.querySelector('#highlight1');
-    const h2 = svg?.querySelector('#highlight2');
-    if (!svg || !iris || !pupil) return;
+  // Estado
+  const S = {
+    lastMouse: { x: window.innerWidth/2, y: window.innerHeight/2 },
+    energy: 0,
+    iris:  { x: CX, y: CY, vx: 0, vy: 0 },
+    pupil: { x: CX, y: CY, vx: 0, vy: 0 },
+    tI: { x: CX, y: CY }, // targets
+    tP: { x: CX, y: CY },
+    raf: 0,
+    destroyed: false
+  };
 
-    const center = { x: 80, y: 80 };
-    const irisR = 26;
-    const maxOffset = 20;
+  // Convierte la distancia en pantalla → radio relativo [0..1] dentro del ojo
+  // Usamos el menor semieje del rect del SVG para ser robustos a escalado CSS.
+  function distanceRatioToEye(clientX, clientY) {
+    const rect = svg.getBoundingClientRect();
+    const cxPx = rect.left + rect.width  * 0.5;
+    const cyPx = rect.top  + rect.height * 0.5;
+    const dx = clientX - cxPx, dy = clientY - cyPx;
+    const d  = Math.hypot(dx, dy);
+    const rLimit = Math.max(1, Math.min(rect.width, rect.height) * 0.5); // px
+    return { d, ratio: clamp(d / rLimit, 0, 1), ux: dx / (d || 1), uy: dy / (d || 1) };
+  }
 
-    function lookAt(clientX, clientY) {
-      const box = svg.getBoundingClientRect();
-      const dx = clientX - (box.left + box.width * 0.5);
-      const dy = clientY - (box.top + box.height * 0.5);
-      const angle = Math.atan2(dy, dx);
-      const dist = Math.min(Math.hypot(dx, dy) / 18, maxOffset);
-      const offX = Math.cos(angle) * dist;
-      const offY = Math.sin(angle) * dist;
+  // Calcula SIEMPRE un objetivo direccional (circular, no por ejes)
+  function computeTargets(clientX, clientY) {
+    const { ratio, ux, uy } = distanceRatioToEye(clientX, clientY);
 
-      const ix = clamp(center.x + offX, center.x - (irisR - 3), center.x + (irisR - 3));
-      const iy = clamp(center.y + offY, center.y - (irisR - 3), center.y + (irisR - 3));
-      iris.setAttribute('cx', ix); iris.setAttribute('cy', iy);
+    // Offset crece con la distancia real hasta saturar en su máximo
+    const offI = MAX_IRIS_OFFSET  * ratio;
+    const offP = MAX_PUPIL_OFFSET * ratio;
 
-      const px = clamp(center.x + offX * 1.4, center.x - (irisR - 6), center.x + (irisR - 6));
-      const py = clamp(center.y + offY * 1.4, center.y - (irisR - 6), center.y + (irisR - 6));
-      pupil.setAttribute('cx', px); pupil.setAttribute('cy', py);
+    S.tI.x = CX + ux * offI;  S.tI.y = CY + uy * offI;
+    S.tP.x = CX + ux * offP;  S.tP.y = CY + uy * offP;
+  }
 
-      if (h1 && h2) {
-        h1.setAttribute('cx', px + 9); h1.setAttribute('cy', py - 8);
-        h2.setAttribute('cx', px + 5); h2.setAttribute('cy', py - 3);
-      }
+  // Entrada global
+  function onMove(e) {
+    S.lastMouse.x = e.clientX;
+    S.lastMouse.y = e.clientY;
+
+    // Energía para dilatación (sin depender de movementX/Y, que fallan en algunos navegadores)
+    if (typeof onMove.prevX === 'number') {
+      const vx = e.clientX - onMove.prevX;
+      const vy = e.clientY - onMove.prevY;
+      S.energy = clamp(S.energy * 0.9 + Math.hypot(vx, vy) * 0.6, 0, 120);
     }
-    window.addEventListener('mousemove', (e) => lookAt(e.clientX, e.clientY));
+    onMove.prevX = e.clientX; onMove.prevY = e.clientY;
   }
+  document.addEventListener('pointermove', onMove, { passive: true });
+
+  // Bucle
+  let lastTS = performance.now();
+  function tick(now) {
+    if (S.destroyed) return;
+    const dt = clamp((now - lastTS) / 1000, 0, 0.033);
+    lastTS = now;
+
+    // Objetivos: puntero → offsets circulares
+    computeTargets(S.lastMouse.x, S.lastMouse.y);
+
+    // Integración muelles
+    springStep(S.iris,  S.tI, K_IRIS, C_IRIS, dt);
+    springStep(S.pupil, S.tP, K_PUP,  C_PUP,  dt);
+
+    // Aplicar a SVG
+    iris.setAttribute('cx', S.iris.x);   iris.setAttribute('cy', S.iris.y);
+    pupil.setAttribute('cx', S.pupil.x); pupil.setAttribute('cy', S.pupil.y);
+    if (h1 && h2) {
+      h1.setAttribute('cx', S.pupil.x + 9); h1.setAttribute('cy', S.pupil.y - 8);
+      h2.setAttribute('cx', S.pupil.x + 5); h2.setAttribute('cy', S.pupil.y - 3);
+    }
+
+    // Dilatación sutil por "energía" de puntero
+    S.energy *= 0.94;
+    const k = clamp(S.energy / 100, 0, 1);
+    const pr = clamp(pupilR0 + (PUP_MAX - pupilR0) * (k * PUP_DILATE_V)
+                               - (pupilR0 - PUP_MIN) * (1 - k) * 0.12,
+                     PUP_MIN, PUP_MAX);
+    pupil.setAttribute('r', pr);
+
+    S.raf = requestAnimationFrame(tick);
+  }
+
+  S.raf = requestAnimationFrame(tick);
+
+  // Limpieza
+  const api = {
+    lookAt: (x, y) => computeTargets(x, y),
+    destroy: () => {
+      if (S.destroyed) return;
+      S.destroyed = true;
+      cancelAnimationFrame(S.raf);
+      document.removeEventListener('pointermove', onMove, { passive: true });
+    }
+  };
+  window.__AssistantEye = api;
+  if (window.Assistant) window.Assistant.eye = api;
+}
+
+
+
+
+
 
   // ---------- Mensajes locales (cola con tipeo) ----------
   const queue = []; let typing = false;
@@ -281,6 +397,7 @@
     say, ask,
   };
   window.Assistant = Assistant;
+  if (window.__AssistantEye) window.Assistant.eye = window.__AssistantEye;
 
   // ---------- Auto-arranque ----------
   window.addEventListener('DOMContentLoaded', () => {
