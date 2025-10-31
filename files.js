@@ -52,7 +52,7 @@ const filesByFolder = {
     { name: "Render Sala VR",         kind: "photo", host: "drive", url: "https://drive.google.com/file/d/1ZyxWVUTSRQponMLKJIHGFEDCBA/view?usp=sharing" }
   ]
 };
-
+// pasar a .json (hot reloads)
 
 // 2) Helpers para IDs/embeds
 function getYouTubeId(url) {
