@@ -17,57 +17,184 @@ function safeQueryAllGrid(selector) {
 }
 // 1) Define aquí los archivos por carpeta (edítalo a tu gusto)
 const filesByFolder = {
-  "Music": [
+
+  "Proyectos": [
     {
-      name: "Expo Maria",
+      category: "Música y sonido",
+      name: "Expo María",
       kind: "project",
-      category: "Música para expo",
+      subtitle: "Música para exposición · 2023",
       thumb: "https://bbaa.usal.es/wp-content/uploads/2022/06/eae_la-_folklorika_01.jpg",
       links: [
         { label: "Artículo", kind: "site", host: "web", url: "https://bbaa.usal.es/actividades/la-folklorica" },
         { label: "Spotify", kind: "song", host: "spotify", url: "https://open.spotify.com/intl-es/album/5TOZnTc0jaTr3m4ESH4OAU" }
       ]
-    }, // página web
-    { name: "Música tati",            kind: "song",     host: "spotify",  url: "https://" },
-    { name: "Hackaton",               kind: "link",     host: "web",      url: "https://valenciaplaza.com/musica-opera-valencia-comunitat-valenciana/la-music-hackaton-de-valencia-transforma-las-naves-en-un-estudio-de-experimentacion-sonora",thumb: "//d31u1w5651ly23.cloudfront.net/articulos/articulos-312842.jpg"},
-    { name: "Modul",                  kind: "link",     host: "web",      url: "https://www.instagram.com/p/DEflCYvsHDh/?img_index=4", thumb: "https://drive.google.com/file/d/1BQ8-DwEkPk2sArQoRh-p1c-tgmit05Hj/view?usp=sharing",  subtitle: "Instalación VR · 2024"},
-  ],
+    },
+    {
+      category: "Música y sonido",
+      name: "Música Tati",
+      kind: "song",
+      host: "spotify",
+      url: "https://",
+      subtitle: "Composición original"
+    },
+    {
+      category: "Música y sonido",
+      name: "Hackaton",
+      kind: "link",
+      host: "web",
+      url: "https://valenciaplaza.com/musica-opera-valencia-comunitat-valenciana/la-music-hackaton-de-valencia-transforma-las-naves-en-un-estudio-de-experimentacion-sonora",
+      thumb: "//d31u1w5651ly23.cloudfront.net/articulos/articulos-312842.jpg",
+      subtitle: "Evento experimental · Las Naves"
+    },
+    {
+      category: "Música y sonido",
+      name: "Modul",
+      kind: "link",
+      host: "web",
+      url: "https://www.instagram.com/p/DEflCYvsHDh/?img_index=4",
+      thumb: "https://drive.google.com/uc?export=view&id=1BQ8-DwEkPk2sArQoRh-p1c-tgmit05Hj",
+      subtitle: "Instalación VR · 2024"
+    },
 
-  "Videos": [
-    // (tus existentes)
-    { name: "Con esos ojitos",        kind: "video", host: "youtube", url: "https://www.youtube.com/watch?v=df1wnWwtuQc" },
-    { name: "Windows66",              kind: "video", host: "youtube", url: "https://www.youtube.com/watch?v=yalKehB3IYo" },
-    { name: "segunda intermisión",    kind: "video", host: "youtube", url: "https://youtu.be/wGGo4pKWG84?si=Lm6oeCQsIzO19Ddm" },
-    { name: "SOMETIMES U CANT TRUST IN WHAT SEEMS REAL",      kind: "video", host: "youtube", url: "https://youtu.be/O80O1P7qKXg?si=ll1zQ6nGrevnqw94", minTitleSize: 8.5},
-    { name: "videoarte sahara",       kind: "video", host: "youtube", url: "" },
-  ],
+    {
+      category: "Audiovisual y videoarte",
+      name: "Con esos ojitos",
+      kind: "video",
+      host: "youtube",
+      url: "https://www.youtube.com/watch?v=df1wnWwtuQc"
+    },
+    {
+      category: "Audiovisual y videoarte",
+      name: "Windows66",
+      kind: "video",
+      host: "youtube",
+      url: "https://www.youtube.com/watch?v=yalKehB3IYo"
+    },
+    {
+      category: "Audiovisual y videoarte",
+      name: "Segunda intermisión",
+      kind: "video",
+      host: "youtube",
+      url: "https://youtu.be/wGGo4pKWG84?si=Lm6oeCQsIzO19Ddm"
+    },
+    {
+      category: "Audiovisual y videoarte",
+      name: "Sometimes U Can't Trust In What Seems Real",
+      kind: "video",
+      host: "youtube",
+      url: "https://youtu.be/O80O1P7qKXg?si=ll1zQ6nGrevnqw94",
+      minTitleSize: 8.5
+    },
+    {
+      category: "Audiovisual y videoarte",
+      name: "Videoarte Sahara",
+      kind: "video",
+      host: "youtube",
+      url: ""
+    },
 
-  "Live": [
-    { name: "Volumens1",              kind: "link", host: "web", url: "https://volumens.es/vo7-2023" },
-    { name: "Volumens2",              kind: "link", host: "web", url: "https://volumens.es/2024-ecosystem" },
-    { name: "videomapingCCCC",        kind: "link", host: "web", url: "https://www.consorcimuseus.gva.es/actividades/videomapping-al-cccc-ciutat-glitch/?lang=es" },
-    { name: "VRSportingClubRuzafa",   kind: "link", host: "web", url: "https://www.facebook.com/masterAVM/posts/este-viernes-17022023-en-sporting-club-ruzafa-de-valencia-sound-no-sound-23-prop/584907886984629" },
-  ],
+    {
+      category: "Performance y directo",
+      name: "Volumens Festival 2023",
+      kind: "link",
+      host: "web",
+      url: "https://volumens.es/vo7-2023"
+    },
+    {
+      category: "Performance y directo",
+      name: "Volumens Ecosystem 2024",
+      kind: "link",
+      host: "web",
+      url: "https://volumens.es/2024-ecosystem"
+    },
+    {
+      category: "Performance y directo",
+      name: "Videomapping CCCC",
+      kind: "link",
+      host: "web",
+      url: "https://www.consorcimuseus.gva.es/actividades/videomapping-al-cccc-ciutat-glitch/?lang=es"
+    },
+    {
+      category: "Performance y directo",
+      name: "VR Sporting Club Ruzafa",
+      kind: "link",
+      host: "web",
+      url: "https://www.facebook.com/masterAVM/posts/este-viernes-17022023-en-sporting-club-ruzafa-de-valencia-sound-no-sound-23-prop/584907886984629"
+    },
 
-  "Code": [
-    { name: "P5.js y P5.xr",          kind: "project", host: "web",  url: "https://editor.p5js.org/lanesvm/sketches" }, // pon repo o demo
-    { name: "aplicaciónMovilAbletone",kind: "project", host: "web",  url: "" },
-    { name: "AjedrezChess",           kind: "project", host: "web",  url: "" },
-  ],
+    {
+      category: "Instalación y VR",
+      name: "Cyclops",
+      kind: "link",
+      host: "web",
+      url: "",
+      thumb: "https://drive.google.com/uc?export=view&id=1ju5mwsBQGtaA52hmnRGPQd9QA9LAQiA8"
+    },
+    {
+      category: "Instalación y VR",
+      name: "The Missing Archive",
+      kind: "link",
+      host: "web",
+      url: "",
+      thumb: "https://drive.google.com/uc?export=view&id=15K-gh0BFH97IWhGvxmGfEv2fTD2lu5ht"
+    },
+    {
+      category: "Instalación y VR",
+      name: "Nobody Is An Island",
+      kind: "link",
+      host: "web",
+      url: "https://www.instagram.com/p/C38S6ttijD6/?img_index=1",
+      thumb: "https://drive.google.com/uc?export=view&id=1BL2Kt9zuBodDraxHQEBbeLPP28c7NGxG"
+    },
+    {
+      category: "Instalación y VR",
+      name: "Hand Tracking VR",
+      kind: "link",
+      host: "web",
+      url: ""
+    },
+    {
+      category: "Instalación y VR",
+      name: "Cuadro 3D",
+      kind: "link",
+      host: "web",
+      url: "https://www.instagram.com/p/Cr9MiedogPW/?img_index=1",
+      thumb: "https://drive.google.com/uc?export=view&id=1OYTo87y1dYFFA8KCDdaKhMk39g1mAkdO"
+    },
 
-  "VR y 3D": [
-    { name: "Cyclops",                               kind: "link", host: "web", url: "",thumb: "https://drive.google.com/file/d/1ju5mwsBQGtaA52hmnRGPQd9QA9LAQiA8/view?usp=sharing"},
-    { name: "ThemissingArchive",                     kind: "link", host: "web", url: "", thumb: "https://drive.google.com/file/d/15K-gh0BFH97IWhGvxmGfEv2fTD2lu5ht/view?usp=drive_link"},
-    { name: "NobodyIsAnIsland",                      kind: "link", host: "web", url: "https://www.instagram.com/p/C38S6ttijD6/?img_index=1",thumb: "https://drive.google.com/file/d/1BL2Kt9zuBodDraxHQEBbeLPP28c7NGxG/view?usp=drive_link" },
-    { name: "Hand trackingVR",                       kind: "link", host: "web", url: "" },
-    { name: "Cuadro3D",               kind: "link", host: "web", url: "https://www.instagram.com/p/Cr9MiedogPW/?img_index=1",thumb:"https://drive.google.com/file/d/1OYTo87y1dYFFA8KCDdaKhMk39g1mAkdO/view?usp=sharing" },
-  ],
+    {
+      category: "Código y experimentación",
+      name: "P5.js y P5.xr",
+      kind: "project",
+      host: "web",
+      url: "https://editor.p5js.org/lanesvm/sketches"
+    },
+    {
+      category: "Código y experimentación",
+      name: "Aplicación móvil Abletone",
+      kind: "project",
+      host: "web",
+      url: ""
+    },
+    {
+      category: "Código y experimentación",
+      name: "Ajedrez Chess",
+      kind: "project",
+      host: "web",
+      url: ""
+    },
 
-  // Mantengo tu carpeta Documents original
-  "Documents": [
-    { name: "Render Sala VR",         kind: "photo", host: "drive", url: "https://drive.google.com/file/d/1ZyxWVUTSRQponMLKJIHGFEDCBA/view?usp=sharing" }
+    {
+      category: "Documentación y renders",
+      name: "Render Sala VR",
+      kind: "photo",
+      host: "drive",
+      url: "https://drive.google.com/file/d/1ZyxWVUTSRQponMLKJIHGFEDCBA/view?usp=sharing"
+    }
   ]
 };
+
 // pasar a .json (hot reloads)
 
 // 2) Helpers para IDs/embeds

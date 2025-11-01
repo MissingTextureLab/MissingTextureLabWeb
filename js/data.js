@@ -1,11 +1,10 @@
 export let folders = [
-  { name: "VR y 3D",     x: 0, y: 0, icon: "icons/FolderVirtual.png", type: "folder", created: "2024-01-15", size: "15.2 MB", items: 24 },
-  { name: "instalación", x: 1, y: 0, icon: "icons/FolderText.png",   type: "folder", created: "2024-01-08", size: "45.8 MB", items: 67 },
-  { name: "Music",       x: 0, y: 1, icon: "icons/FoldeMusic.png",   type: "folder", created: "2024-02-10", size: "2.1 GB",  items: 156 },
-  { name: "Code",        x: 0, y: 2, icon: "icons/FolderCode.png",    type: "folder", created: "2024-01-22", size: "850 MB",  items: 89 },
-  { name: "Videos",      x: 0, y: 3, icon: "icons/FolderVideo.png",   type: "folder", created: "2024-03-05", size: "5.7 GB",  items: 42 },
-  { name: "¿?",          x: 1, y: 1, icon: "icons/FolderRandom.png",  type: "folder", created: "2024-02-28", size: "12.4 GB", items: 8 },
-  { name: "Readme",      x: 1, y: 2, icon: "icons/FolderMipcl.png",   type: "file",   created: "2024-03-15", size: "2.4 KB",  items: 1 }
+  { name: "Sobre mí",                x: 0, y: 0, icon: "icons/FolderMipcl.png",  type: "folder" },
+  { name: "Proyectos",               x: 1, y: 0, icon: "icons/FolderVirtual.png",   type: "folder" },
+  { name: "Lab", x: 0, y: 1, icon: "icons/FolderCode.png",  type: "folder" },
+  { name: "Educación",    x: 1, y: 1, icon: "icons/Foldertext.png",   type: "folder" },
+  { name: "Futuro",x: 0, y: 2, icon: "icons/FolderRandom.png", type: "folder" },
+ 
 ];
 
 // —— Persistencia simple en localStorage ——
