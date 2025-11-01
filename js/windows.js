@@ -55,7 +55,7 @@ export function addToTaskbar(name, icon = '📁') {
   `;
 
   btn.addEventListener('click', () => {
-    const win = document.getElementById(`win-${name}`);
+  const win = document.getElementById(`win-${key}`);
 
     // Si la ventana no existe (se cerró), pide reabrirla
     if (!win) {
@@ -76,13 +76,15 @@ export function addToTaskbar(name, icon = '📁') {
 
   tb.appendChild(btn);
 }
-
 // ---- Crear ventana de propiedades ----
 export function openProperties(folder) {
   if (!folder) return;
-  const key = normalizeName(folder.name);
+
+  const baseName = `Propiedades: ${folder.name}`;
+  const key = baseName.toLowerCase().replace(/\s+/g, '-');
   const winId = `win-${key}`;
 
+  // Si ya existe → mostrar y traer al frente
   let win = document.getElementById(winId);
   if (win) {
     win.style.display = 'block';
@@ -90,7 +92,7 @@ export function openProperties(folder) {
     return;
   }
 
-  // Crear ventana
+  // === Crear ventana ===
   win = document.createElement('div');
   win.className = 'window window-properties';
   win.id = winId;
@@ -99,54 +101,106 @@ export function openProperties(folder) {
   const header = document.createElement('div');
   header.className = 'window-header';
   header.innerHTML = `
-    <span class="window-title">${folder.icon || '📁'} ${folder.name}</span>
+    <span>${folder.icon || '📁'} Propiedades: ${folder.name}</span>
     <div class="window-buttons">
-      <button class="min-btn" title="Minimize">_</button>
-      <button class="close-btn" title="Close">✕</button>
+      <span class="min-btn">_</span>
+      <span class="max-btn">□</span>
+      <span class="close-btn">✕</span>
     </div>
   `;
 
   const content = document.createElement('div');
   content.className = 'window-content';
   content.innerHTML = `
-    <p><strong>Type:</strong> Folder</p>
-    <p><strong>Items:</strong> ${folder.files?.length || 0}</p>
-    <p><strong>Position:</strong> X=${folder.x ?? '—'}, Y=${folder.y ?? '—'}</p>
-    <p><strong>Last modified:</strong> ${new Date().toLocaleString()}</p>
+    <div class="properties-content">
+      <p><strong>Tipo:</strong> Carpeta</p>
+      <p><strong>Elementos:</strong> ${folder.files?.length || 0}</p>
+      <p><strong>Posición:</strong> X=${folder.x ?? '—'}, Y=${folder.y ?? '—'}</p>
+      <p><strong>Última modificación:</strong> ${new Date().toLocaleString()}</p>
+    </div>
   `;
 
-  win.append(header, content);
+  win.appendChild(header);
+  win.appendChild(content);
   document.body.appendChild(win);
 
-  // Centrar ventana
-  const W = 320, H = 200;
-  win.style.width = `${W}px`;
-  win.style.height = `${H}px`;
-  win.style.left = `${(window.innerWidth - W) / 2}px`;
-  win.style.top = `${(window.innerHeight - H) / 2}px`;
+  // === Tamaño y posición inicial ===
+  const W = Math.min(460, Math.floor(window.innerWidth * 0.55));
+  const H = Math.min(300, Math.floor(window.innerHeight * 0.45));
+  win.style.left = ((window.innerWidth - W) / 2) + 'px';
+  win.style.top = ((window.innerHeight - H) / 2) + 'px';
+  win.style.width = W + 'px';
+  win.style.height = H + 'px';
+  win.style.display = 'block';
 
+  // 🔗 Añadir botón a taskbar con clave sincronizada
+  addToTaskbar(baseName, '⚙️');
   bringToFront(win);
-  addToTaskbar(folder.name, folder.icon);
 
-  // === Botones ===
-
-  // 🟣 Cerrar → elimina ventana y botón
+  // === Botones funcionales ===
+  // Cerrar
   header.querySelector('.close-btn').addEventListener('click', () => {
     const tbBtn = document.querySelector(`.task-btn[data-task="${key}"]`);
-    if (tbBtn) tbBtn.remove(); // ✅ botón eliminado al cerrar
+    if (tbBtn) tbBtn.remove();
     win.remove();
   });
 
-  // 🟢 Minimizar → solo oculta la ventana, mantiene el botón
+  // Minimizar
   header.querySelector('.min-btn').addEventListener('click', () => {
     win.style.display = 'none';
   });
 
-  // Arrastre
-  header.addEventListener('mousedown', (e) => {
-    if (e.target.closest('.window-buttons')) return;
-    if (typeof window.startDrag === 'function') window.startDrag(win, e);
+  // Maximizar / restaurar
+  let maximized = false;
+  header.querySelector('.max-btn').addEventListener('click', () => {
+    if (!maximized) {
+      win.dataset.prev = JSON.stringify({
+        left: win.style.left, top: win.style.top,
+        width: win.style.width, height: win.style.height
+      });
+      win.style.left = 0;
+      win.style.top = 0;
+      win.style.width = window.innerWidth + 'px';
+      win.style.height = (window.innerHeight - 40) + 'px';
+      maximized = true;
+    } else {
+      const prev = JSON.parse(win.dataset.prev);
+      win.style.left = prev.left;
+      win.style.top = prev.top;
+      win.style.width = prev.width;
+      win.style.height = prev.height;
+      maximized = false;
+    }
   });
 
-  win.addEventListener('mousedown', () => bringToFront(win));
+  header.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.window-buttons')) return;
+
+    e.preventDefault();
+    bringToFront(win);
+
+    const rect = win.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+
+    function onMouseMove(ev) {
+      const maxLeft = window.innerWidth - win.offsetWidth;
+      const taskbarH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--taskbar-h')) || 40;
+      const maxTop = window.innerHeight - taskbarH - win.offsetHeight;
+
+      const x = Math.max(0, Math.min(maxLeft, ev.clientX - offsetX));
+      const y = Math.max(0, Math.min(maxTop, ev.clientY - offsetY));
+
+      win.style.left = x + 'px';
+      win.style.top = y + 'px';
+    }
+
+    function onMouseUp() {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    }
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  });
 }

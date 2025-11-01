@@ -179,11 +179,18 @@ body::before{
 .min-btn:hover{   background: var(--frutiger-cyan); color: white; }
 .max-btn:hover{   background: var(--frutiger-light); color: white; }
 
-.window-content{
-  padding: 20px; 
+.window-content {
+  position: absolute;
+  top: var(--titlebar-h); /* justo debajo del header */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto; /* scroll solo aquí */
+  overflow-x: hidden;
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
-  min-height: 150px;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 .status-bar{

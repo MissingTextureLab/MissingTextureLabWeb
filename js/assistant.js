@@ -13,70 +13,153 @@ const queue = [];
 const has = (fnName) => typeof window[fnName] === 'function';
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
-// ---------- Estilos ----------
 function injectAssistantStyles() {
   if (document.getElementById('assistant-style')) return;
   const style = document.createElement('style');
   style.id = 'assistant-style';
   style.textContent = `
+  /* === Ventana Assistant — versión original restaurada === */
   .window-assistant {
-    width: 640px; height: 420px; min-width: 420px; min-height: 320px;
-    resize: none !important; overflow: hidden !important; z-index: 12000;
+    width: 640px;
+    height: 420px;
+    min-width: 420px;
+    min-height: 320px;
+    resize: none !important;
+    overflow: hidden !important;
+    z-index: 12000;
+    background: linear-gradient(135deg, var(--frutiger-white) 0%, var(--chrome-silver) 100%);
+    display: flex;
+    flex-direction: column;
   }
+
   .window-assistant .window-header {
     background: linear-gradient(135deg, var(--frutiger-purple), var(--frutiger-light));
     height: var(--titlebar-h);
-    display: flex; align-items: center; justify-content: space-between; border: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    color: var(--frutiger-white);
+    font-weight: 600;
+    border: none;
+    flex-shrink: 0;
+    cursor: move;
   }
-  .window-assistant .window-header .window-buttons { display: none !important; }
 
+  .window-assistant .window-header .window-buttons {
+    display: none !important;
+  }
+
+  /* === Contenedor general === */
   .window-assistant .window-content {
-    position: relative; width: 100%; height: calc(100% - var(--titlebar-h));
-    background: transparent; display: grid; padding: 0; margin: 0; overflow: hidden;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
   }
 
   .assistant-root {
-    width: 100%; height: 100%;
-    display: grid; grid-template-columns: 260px 1fr; grid-template-rows: 1fr auto; gap: 0;
-    background: transparent;
+    flex: 1;
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    grid-template-rows: 1fr auto;
+    height: 100%;
+    width: 100%;
   }
 
+  /* === Columna izquierda: ojo === */
   .assistant-eye-wrap {
-    grid-row: 1 / span 2; grid-column: 1 / 2;
-    display: grid; place-items: center;
+    grid-row: 1 / span 2;
+    grid-column: 1 / 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background:
       radial-gradient(60% 60% at 50% 30%, rgba(168,85,247,0.25), transparent 70%),
       linear-gradient(180deg, rgba(168,85,247,0.12), rgba(76,29,149,0.18));
   }
-  .eye-box { width: 90%; max-width: 220px; aspect-ratio: 1/1; display: grid; place-items: center; }
-  .assistant-eye { width: 100%; height: 100%; display: block; background: transparent; }
 
+  .eye-box {
+    width: 90%;
+    max-width: 220px;
+    aspect-ratio: 1 / 1;
+    display: grid;
+    place-items: center;
+  }
+
+  .assistant-eye {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* === Burbuja de texto === */
   .assistant-bubble {
-    grid-column: 2 / 3; grid-row: 1 / 2;
-    padding: 14px; background: rgba(255,255,255,0.88);
-    color: var(--frutiger-dark); font-size: 13px; line-height: 1.4;
-    overflow: auto; border: none;
+    grid-column: 2 / 3;
+    grid-row: 1 / 2;
+    padding: 14px;
+    background: rgba(255,255,255,0.88);
+    color: var(--frutiger-dark);
+    font-size: 13px;
+    line-height: 1.45;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: none;
   }
-  .assistant-typing { white-space: pre-wrap; }
 
-  .assistant-controls {
-    grid-column: 2 / 3; grid-row: 2 / 3;
-    display: flex; align-items: center; gap: 8px; padding: 10px 12px;
-    background: rgba(168,85,247,0.08);
+  .assistant-typing {
+    white-space: pre-wrap;
   }
+
+  /* === Controles === */
+  .assistant-controls {
+    grid-column: 2 / 3;
+    grid-row: 2 / 3;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(168,85,247,0.08);
+    border-top: 1px solid rgba(168,85,247,0.15);
+  }
+
   .assistant-input {
-    flex: 1; min-width: 160px;
-    border: 1px solid var(--chrome-dark); background: #fff; color: #111; padding: 8px 10px;
+    flex: 1;
+    min-width: 160px;
+    border: 1px solid var(--chrome-dark);
+    background: #fff;
+    color: #111;
+    padding: 8px 10px;
     font-size: 13px;
   }
+
   .assistant-send {
-    font-size: 12px; font-weight: 700; padding: 8px 10px;
-    background: var(--frutiger-purple); color: #fff; border: none; cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 10px;
+    background: var(--frutiger-purple);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s ease;
   }
-  .assistant-send[disabled] { opacity: .6; cursor: not-allowed; }
+
+  .assistant-send:hover {
+    background: var(--frutiger-light);
+  }
+
+  .assistant-send[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
   `;
   document.head.appendChild(style);
 }
+
+
+
 
 // ---------- Comunicación con backend ----------
 async function streamFromVercel(messages, onToken) {
