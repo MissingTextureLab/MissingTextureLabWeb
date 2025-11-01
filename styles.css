@@ -311,34 +311,61 @@ body::before{
 
 .start-menu-icon{ font-size: 18px; margin: 0; }
 
-.taskbar-icons{
-  display:flex;
-  gap:4px;
+/* =====================
+   Taskbar FIX
+===================== */
+.taskbar {
+  position: fixed !important;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(40, 35, 80, 0.6);
+  backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid rgba(150, 100, 255, 0.4);
+  border-radius: 12px;
+  padding: 6px 10px;
+  display: flex !important;
+  flex-direction: row !important;     /* 🔥 fuerza horizontal */
+  justify-content: center;
   align-items: center;
-}
-
-.task-icon{
-  background: var(--chrome-silver);
-  border: 1px solid var(--chrome-dark);
-  padding: 6px 12px;
-  color: var(--frutiger-dark);
-  cursor:pointer;
-  font-size: 10px;
-  transition: 0.2s ease;
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  gap: 8px;
   white-space: nowrap;
-  font-weight: 600;
-  backdrop-filter: blur(10px);
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  z-index: 9999;
+  box-shadow: 0 0 20px rgba(120, 80, 255, 0.3);
 }
 
-.task-icon:hover{
-  background: var(--frutiger-light);
-  color: white;
+/* Botones */
+.task-btn {
+  all: unset;
+  cursor: pointer;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  color: #b336fb;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.25s ease;
+  letter-spacing: 0.4px;
+}
+
+.task-btn:hover {
+  background: rgba(180, 150, 255, 0.25);
+  color: #fff;
   transform: translateY(-1px);
 }
-.task-icon:active{ transform: translateY(0px); }
+
+.task-btn.active {
+  background: rgba(150, 100, 255, 0.4);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(150, 100, 255, 0.5);
+}
+
+
 
 #clock{
   font-weight: bold;

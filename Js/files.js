@@ -1,4 +1,20 @@
+import { folders } from './data.js';
+import { bringToFront, addToTaskbar } from './windows.js';
+const gridEl = document.getElementById('grid-overlay');
+let activeWindow = null;
+let offsetX = 0;
+let offsetY = 0;
 
+// ✅ Definición segura antes de usarla
+function safeQueryAllGrid(selector) {
+  const el = document.getElementById('grid-overlay');
+  if (!(el instanceof Element)) return [];
+  try {
+    return el.querySelectorAll(selector);
+  } catch {
+    return [];
+  }
+}
 // 1) Define aquí los archivos por carpeta (edítalo a tu gusto)
 const filesByFolder = {
   "Music": [
@@ -316,6 +332,7 @@ function openFile(file) {
 
     // Botones básicos y drag
     header.querySelector('.close-btn').addEventListener('click', () => win.remove());
+    
     header.querySelector('.min-btn').addEventListener('click', () => { win.style.display = 'none'; });
     
     header.addEventListener('mousedown', e => {
@@ -388,7 +405,7 @@ function iconFor(file) {
   return "🔗";
 }
 // Marca .no-links si la tarjeta no tiene botones de link
-function markNoLinksFor(gridEl){
+function markNoLinksFor(gridEl) {
   if (!gridEl) return;
   const apply = () => {
     gridEl.querySelectorAll('.file-card').forEach(card => {
@@ -399,77 +416,62 @@ function markNoLinksFor(gridEl){
   };
   apply();
   const mo = new MutationObserver(apply);
-  mo.observe(gridEl, { childList:true, subtree:true });
+  if (gridEl instanceof Node) {
+    mo.observe(gridEl, { childList: true, subtree: false });
+  }
 }
 
-// Escala proporcional: calcula --scale de cada tarjeta según su ancho real
-function attachCardScaler(gridEl){
-  if (!gridEl) return;
+// ============ Escalado automático y ajuste de nombres ============
+function attachCardScaler(gridEl) {
+  if (!(gridEl instanceof Element)) return; // Evita errores de tipo
 
-  function computeScale(card){
+  // --- Función interna: calcula escala de cada tarjeta ---
+  function computeScaleFor(card) {
+    if (!(card instanceof Element)) return;
     const baseW = parseFloat(getComputedStyle(card).getPropertyValue('--base-w')) || 240;
     const w = card.clientWidth || baseW;
-    // límites opcionales para evitar escalas extremas
     const s = Math.max(1, Math.min(1.8, w / baseW));
     card.style.setProperty('--scale', s);
   }
 
-  function updateAll(){
-    gridEl.querySelectorAll('.file-card').forEach(computeScale);
-    fitAllNames(gridEl);
+  // --- Recalcula todas las tarjetas del grid ---
+  function updateAll() {
+    requestAnimationFrame(() => {
+      const cards = gridEl.querySelectorAll('.file-card');
+      if (!cards.length) return;
+      cards.forEach(computeScaleFor);
+      fitAllNames(gridEl);
+    });
   }
 
-  // Observa cambios de tamaño del grid y de cada tarjeta
-  const roGrid  = new ResizeObserver(updateAll);
-  const roCards = new ResizeObserver(updateAll);
-  roGrid.observe(gridEl);
-  gridEl.querySelectorAll('.file-card').forEach(c => roCards.observe(c));
+  // --- Observadores reactivos ---
+  try {
+    const ro = new ResizeObserver(updateAll);
+    ro.observe(gridEl);
+  } catch (err) {
+    console.warn('ResizeObserver no disponible:', err);
+  }
 
-  // Recalcula al cargar imágenes (por si cambian anchuras internas)
-  gridEl.querySelectorAll('.file-card img').forEach(img => {
-    if (!img.complete){
-      img.addEventListener('load', updateAll, { once:true });
-      img.addEventListener('error', updateAll, { once:true });
+  const mo = new MutationObserver(updateAll);
+  mo.observe(gridEl, { childList: true, subtree: false });
+
+  // --- Recalcula al cargar imágenes ---
+  gridEl.querySelectorAll('img').forEach(img => {
+    if (!img.complete) {
+      img.addEventListener('load', updateAll, { once: true });
+      img.addEventListener('error', updateAll, { once: true });
     }
   });
 
-  window.addEventListener('resize', updateAll, { passive:true });
+  // --- Primer ajuste ---
   updateAll();
 }
 
-function fitTextToWidth(el) {
-  if (!el) return;
 
-  // Lee overrides desde data-attrs
-  const forced = el.dataset.forceSize ? parseFloat(el.dataset.forceSize) : null;      // px
-  const strict = el.dataset.forceStrict === '1';                                      // boolean
-  const minSize = el.dataset.minSize ? parseFloat(el.dataset.minSize) : 15;           // px
 
-  // Si hay tamaño forzado estricto: aplícalo y sal
-  if (forced && strict) {
-    el.style.fontSize = forced + 'px';
-    return;
-  }
 
-  // Guarda el tamaño base sólo la primera vez
-  if (!el.dataset.baseFontSize) {
-    el.dataset.baseFontSize = getComputedStyle(el).fontSize || "30px";
-  }
 
-  // Base = forzado (si existe) o el del CSS
-  const baseSize = forced ?? parseFloat(el.dataset.baseFontSize);
-  let size = baseSize;
 
-  // Ancho disponible
-  const parentWidth = (el.parentElement?.clientWidth || el.clientWidth) - 10;
-
-  // Aplica base y reduce si no cabe
-  el.style.fontSize = size + 'px';
-  while (el.scrollWidth > parentWidth && size > minSize) {
-    size -= 0.5;
-    el.style.fontSize = size + 'px';
-  }
-}
 // ---- Subtítulo por defecto (si no lo pones tú) ----
 function prettyHost(host){
   const map = { youtube:'YouTube', spotify:'Spotify', drive:'Drive', web:'Web' };
@@ -575,30 +577,23 @@ function fitNamesInCard(card){
   }
 }
 
-// ---- Reemplaza tu fitAllNames por este (llama al de arriba por tarjeta) ----
-function fitAllNames(scopeEl){
-  scopeEl.querySelectorAll('.file-card').forEach(card => fitNamesInCard(card));
-}
 
-
-
-function fitAllNames(gridEl){
-  gridEl.querySelectorAll('.file-name').forEach(n => {
-    // Ajusta el título como ya hacías
+function fitAllNames(scopeEl) {
+  if (!scopeEl) return;
+  scopeEl.querySelectorAll('.file-name').forEach(n => {
     fitTextToWidth(n);
-
-    // Ahora ajusta el subtítulo si existe
     const sub = n.parentElement?.querySelector('.file-subtitle');
     if (!sub) return;
 
     const hasText = !!sub.textContent && sub.textContent.trim() !== '';
-    if (!hasText) { sub.style.display = 'none'; return; }
+    if (!hasText) {
+      sub.style.display = 'none';
+      return;
+    }
 
     sub.style.display = 'block';
     const namePx = parseFloat(getComputedStyle(n).fontSize) || 16;
-    const subSize = Math.max(10, Math.round(namePx * 0.75)); // 75% del título, mínimo 10px
-
-    // estilos mínimos para que se vea fino sin tocar tu CSS
+    const subSize = Math.max(10, Math.round(namePx * 0.75));
     sub.style.fontSize = subSize + 'px';
     sub.style.lineHeight = '1.2';
     sub.style.opacity = '.8';
@@ -608,6 +603,9 @@ function fitAllNames(gridEl){
     sub.style.textOverflow = 'ellipsis';
   });
 }
+
+window.fitAllNames = fitAllNames; // opcional, por compatibilidad global
+
 
 function encodeData(obj){
   try { return encodeURIComponent(JSON.stringify(obj)); } catch { return ''; }
@@ -656,6 +654,7 @@ function injectCategoryStylesOnce(){
 
 // ============ Tipografía: ajuste O(log n) ============
 function fitTextToWidth(el){
+  
   if (!el) return;
 
   const forced = el.dataset.forceSize ? parseFloat(el.dataset.forceSize) : null;
@@ -697,67 +696,13 @@ function fitTextToWidth(el){
   el.style.fontSize = Math.max(MIN, Math.floor(best * 10)/10) + 'px';
 }
 
-function fitAllNames(scopeEl){
-  scopeEl.querySelectorAll('.file-name').forEach(n => {
-    fitTextToWidth(n);
 
-    const sub = n.parentElement?.querySelector('.file-subtitle');
-    if (!sub) return;
 
-    const hasText = !!sub.textContent && sub.textContent.trim() !== '';
-    if (!hasText) { sub.style.display = 'none'; return; }
 
-    sub.style.display = 'block';
-    const namePx = parseFloat(getComputedStyle(n).fontSize) || 16;
-    const subSize = Math.max(10, Math.round(namePx * 0.75));
-    sub.style.fontSize = subSize + 'px';
-    sub.style.lineHeight = '1.2';
-    sub.style.opacity = '.8';
-    sub.style.marginTop = '2px';
-    sub.style.whiteSpace = 'nowrap';
-    sub.style.overflow = 'hidden';
-    sub.style.textOverflow = 'ellipsis';
-  });
-}
 
-// ============ Escalado de tarjetas (optimizado) ============
-function attachCardScaler(gridEl){
-  if (!gridEl) return;
+  
 
-  const computeScaleFor = (card) => {
-    const styles = getComputedStyle(card);
-    const baseW = parseFloat(styles.getPropertyValue('--base-w')) || 240;
-    const w = card.clientWidth || baseW;
-    const s = Math.max(1, Math.min(1.8, w / baseW));
-    card.style.setProperty('--scale', s);
-  };
 
-  const updateAll = () => {
-    // Lote: un único rAF para todas
-    requestAnimationFrame(() => {
-      gridEl.querySelectorAll('.file-card').forEach(computeScaleFor);
-      fitAllNames(gridEl);
-    });
-  };
-
-  // Observa SOLO el grid (los cambios internos disparan un único callback)
-  const ro = new ResizeObserver(updateAll);
-  ro.observe(gridEl);
-
-  // Si entran/filtran tarjetas dinámicamente, observa el DOM
-  const mo = new MutationObserver(() => updateAll());
-  mo.observe(gridEl, { childList:true, subtree:false });
-
-  // Imágenes que cambian layout
-  gridEl.querySelectorAll('img').forEach(img => {
-    if (!img.complete){
-      img.addEventListener('load', updateAll, { once:true });
-      img.addEventListener('error', updateAll, { once:true });
-    }
-  });
-
-  updateAll();
-}
 
 // ============ Tarjeta de archivo (sin listeners por botón; delegación) ============
 function buildFileCard(file){
@@ -925,7 +870,15 @@ function openFolder(name){
   addToTaskbar(name);
 
   // Botones
-  header.querySelector('.close-btn').addEventListener('click',()=> windowEl.remove());
+  header.querySelector('.close-btn').addEventListener('click', () => {
+      // Eliminar la ventana
+      windowEl.remove();
+
+      // Buscar y eliminar el botón asociado en la taskbar
+      const key = name.toLowerCase().replace(/\s+/g, '-');
+      const taskBtn = document.querySelector(`.task-btn[data-task="${key}"]`);
+      if (taskBtn) taskBtn.remove();
+  });
   header.querySelector('.min-btn').addEventListener('click',()=> windowEl.style.display='none');
 
   let maximized = false;
@@ -956,9 +909,11 @@ function openFolder(name){
 
 
 // 7) Inyecta la lista de archivos al cargar
-document.addEventListener('DOMContentLoaded', () => {
+export function initFiles() {
+  if (window.__FILES_INIT__) return;
+  window.__FILES_INIT__ = true;
   for (const f of folders) f.files = filesByFolder[f.name] || [];
-});
+}
 
 // ===== Drag robusto con overlay =====
 let dragShield = null;
@@ -1009,4 +964,10 @@ function startDrag(win, e) {
 }
 window.fitAllNames = function(scopeEl){
   scopeEl.querySelectorAll('.file-card').forEach(card => fitNamesInCard(card));
+};
+
+export {
+  openFolder,
+  openFile,
+  startDrag
 };
