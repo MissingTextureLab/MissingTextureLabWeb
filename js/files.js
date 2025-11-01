@@ -1,5 +1,6 @@
 import { folders } from './data.js';
 import { bringToFront, addToTaskbar } from './windows.js';
+import { openAboutWindow } from './about.js';
 const gridEl = document.getElementById('grid-overlay');
 let activeWindow = null;
 let offsetX = 0;
@@ -379,6 +380,16 @@ function getEmbedHTML(file) {
 // 5) Ventana de archivo (embed)
 function slug(s){ return s.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-]/g,''); }
 function openFile(file) {
+  // Si el archivo es "Sobre mí", abrimos la ventana personalizada
+  if (file.name === "Sobre mí") {
+    openAboutWindow();
+    return;
+  }
+
+  // resto de tus condiciones normales
+  if (file.type === "folder") {
+    openFolder(file.name);
+  }
 
   if (file.host === "web") {
     if (file.url && file.url.trim() !== "") {
