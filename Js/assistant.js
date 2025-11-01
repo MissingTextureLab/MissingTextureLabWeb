@@ -1,6 +1,5 @@
-// ===== assistant.js =====
-// Chat permanente tipo “Leandro” con seguimiento ocular y conexión a /api/chat
-// Depende opcionalmente de: startDrag(win, e), bringToFront(win)
+
+
 
 import { bringToFront } from './windows.js';
 import { startDrag } from './files.js';
