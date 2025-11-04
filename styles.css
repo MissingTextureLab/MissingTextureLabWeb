@@ -828,7 +828,7 @@ body.dragging .icon {
   font-family: "Cascadia Code", monospace;
   z-index: 10;
   background: rgba(0,0,0,0.2);
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(0px);
 }
 
 #about-text section {

@@ -34,9 +34,9 @@ export function initAbout3D() {
   // === MODELOS ===
   const loader = new GLTFLoader();
   const paths = [
-    './models/about/adapter.glb',
-    './models/about/frank.glb',
-    './models/about/hornet.glb',
+    './models/about/piano.glb',
+    './models/about/computer.glb',
+    './models/about/pencils.glb',
     './models/about/metronome.glb'
   ];
 
