@@ -1,6 +1,6 @@
 import { folders } from './data.js';
 import { bringToFront, addToTaskbar } from './windows.js';
-import { openAboutWindow } from './about.js';
+
 const gridEl = document.getElementById('grid-overlay');
 let activeWindow = null;
 let offsetX = 0;
@@ -18,6 +18,7 @@ function safeQueryAllGrid(selector) {
 }
 // 1) Define aquí los archivos por carpeta (edítalo a tu gusto)
 const filesByFolder = {
+  
 
   "Proyectos": [
     {
@@ -381,10 +382,7 @@ function getEmbedHTML(file) {
 function slug(s){ return s.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-]/g,''); }
 function openFile(file) {
   // Si el archivo es "Sobre mí", abrimos la ventana personalizada
-  if (file.name === "Sobre mí") {
-    openAboutWindow();
-    return;
-  }
+
 
   // resto de tus condiciones normales
   if (file.type === "folder") {
@@ -899,12 +897,133 @@ function buildFileCard(file){
 }
 
 // ============ openFolder (render por categorías + delegación de eventos) ============
-function openFolder(name){
+function openFolder(name) {
+
+  // Si ya existe la ventana, solo la traemos al frente
   const existing = document.getElementById(`win-${name}`);
-  if (existing){ existing.style.display = 'block'; bringToFront(existing); return; }
+  if (existing) {
+    existing.style.display = 'block';
+    bringToFront(existing);
+    return;
+  }
 
   const folder = folders.find(f => f.name === name);
   const files = folder?.files ?? [];
+
+  // ================================
+  // 🟣 CASO ESPECIAL: carpeta "Sobre mí"
+  // ================================
+  if (name === "Sobre mí") {
+    const windowEl = document.createElement('div');
+    windowEl.className = 'window window-about3d';
+    windowEl.id = `win-${name}`;
+
+    // Header estándar
+    const header = document.createElement('div');
+    header.className = 'window-header';
+    header.innerHTML = `
+      <span>${name}</span>
+      <div class="window-buttons">
+        <span class="min-btn">_</span>
+        <span class="max-btn">□</span>
+        <span class="close-btn">✕</span>
+      </div>`;
+
+    // Contenedor principal con canvas
+    const content = document.createElement('div');
+    content.className = 'window-content';
+    content.innerHTML = `
+  <div class="about-layout">
+    <canvas id="about-canvas"></canvas>
+    <div id="about-text">
+      <section data-index="0">
+        <h2>Andrés Vidal Martín Martín</h2>
+        <p>Artista, educador y tecnólogo. Trabajo con sistemas interactivos, música generativa y arte digital. Mi práctica se centra en las relaciones entre el arte, la tecnología y la educación, explorando cómo los entornos interactivos, la realidad virtual, el tracking de datos y otras técnicas digitales pueden integrarse en los procesos educativos</p>
+      </section>
+      <section data-index="1">
+        <h2>Mi enfoque</h2>
+        <p>Trabajo desde una perspectiva queentiende el software, la programacióny lo audiovisual como herramientaspedagógicas y creativas, orientadassiempre al diseño de sistemas deaprendizaje accesibles.Un valor presente en toda mi línea de trabajo es el de la diversidad (cultural, funcional, de género, etc.</p>
+      </section>
+      <section data-index="2">
+        <h2>Instalaciones</h2>
+        <p>Desarrollo entornos virtuales y experiencias inmersivas que combinan arte y educación. Actualmente trabajando en mi proyecto de divulgación @MissingTexture_Lab</p>
+      </section>
+      <section data-index="3">
+        <h2>Contacto</h2>
+        <p>MissingTexture_Lab — espacio de experimentación entre imagen, sonido y tecnología. andresvidalmartinmartin@gmail.com</p>
+      </section>
+    </div>
+  </div>
+`;
+
+    windowEl.appendChild(header);
+    windowEl.appendChild(content);
+    document.body.appendChild(windowEl);
+
+    // Tamaño / posición inicial
+    const W = Math.min(900, Math.floor(window.innerWidth * 0.9));
+    const H = Math.min(600, Math.floor(window.innerHeight * 0.8));
+    windowEl.style.left = ((window.innerWidth - W) / 2) + 'px';
+    windowEl.style.top = ((window.innerHeight - H) / 2) + 'px';
+    windowEl.style.width = W + 'px';
+    windowEl.style.height = H + 'px';
+    windowEl.style.display = 'block';
+
+    bringToFront(windowEl);
+    addToTaskbar(name);
+
+    // Botones
+    header.querySelector('.close-btn').addEventListener('click', () => {
+      windowEl.remove();
+      const key = name.toLowerCase().replace(/\s+/g, '-');
+      const taskBtn = document.querySelector(`.task-btn[data-task="${key}"]`);
+      if (taskBtn) taskBtn.remove();
+    });
+    header.querySelector('.min-btn').addEventListener('click', () => {
+      windowEl.style.display = 'none';
+    });
+
+    // Maximizar / restaurar
+    let maximized = false;
+    header.querySelector('.max-btn').addEventListener('click', () => {
+      if (!maximized) {
+        windowEl.dataset.prev = JSON.stringify({
+          left: windowEl.style.left, top: windowEl.style.top,
+          width: windowEl.style.width, height: windowEl.style.height
+        });
+        windowEl.style.left = 0;
+        windowEl.style.top = 0;
+        windowEl.style.width = window.innerWidth + 'px';
+        windowEl.style.height = (window.innerHeight - 40) + 'px';
+        maximized = true;
+      } else {
+        const prev = JSON.parse(windowEl.dataset.prev);
+        windowEl.style.left = prev.left;
+        windowEl.style.top = prev.top;
+        windowEl.style.width = prev.width;
+        windowEl.style.height = prev.height;
+        maximized = false;
+      }
+    });
+
+    // Permitir arrastrar la ventana
+    header.addEventListener('mousedown', e => {
+      if (e.target.closest('.window-buttons')) return;
+      startDrag(windowEl, e);
+    });
+
+    // Inicializar la escena Three.js
+    import('./about.js').then(m => {
+      if (m.initAbout3D) m.initAbout3D();
+    });
+
+    return; // 🔚 salir aquí (no ejecutar la parte normal)
+  }
+
+  // ================================
+  // 📁 CASO NORMAL: resto de carpetas
+  // ================================
+
   injectCategoryStylesOnce();
 
   const windowEl = document.createElement('div');
@@ -924,7 +1043,7 @@ function openFolder(name){
   const content = document.createElement('div');
   content.className = 'window-content';
 
-  if (!files.length){
+  if (!files.length) {
     content.innerHTML = `
       <h3>📁 ${name}</h3>
       <p style="margin-top:12px;opacity:.8">
@@ -949,20 +1068,16 @@ function openFolder(name){
 
       const grid = document.createElement('div');
       grid.className = 'file-grid category-grid';
-      // grid.classList.add('row-one-line'); // ← activa fila única con scroll si quieres
 
-      // Lote de tarjetas
       const fragCards = document.createDocumentFragment();
-      for (const file of arr){
+      for (const file of arr) {
         const card = buildFileCard(file);
         fragCards.appendChild(card);
       }
       grid.appendChild(fragCards);
-
       section.appendChild(grid);
       fragSections.appendChild(section);
 
-      // Post-render: marcado y escalado
       markNoLinksFor(grid);
       attachCardScaler(grid);
     });
@@ -970,8 +1085,7 @@ function openFolder(name){
     sectionsWrap.appendChild(fragSections);
     content.appendChild(sectionsWrap);
 
-    // === Delegación de eventos ===
-    // 1) Click en botones de link (proyectos)
+    // Eventos internos
     content.addEventListener('click', (ev) => {
       const btn = ev.target.closest('.file-link-btn');
       if (!btn) return;
@@ -979,13 +1093,11 @@ function openFolder(name){
       if (link) openFile(link);
     });
 
-    // 2) Doble click en tarjeta genérica / foto / vídeo / song
     content.addEventListener('dblclick', (ev) => {
       const card = ev.target.closest('.file-card');
       if (!card) return;
       const file = decodeData(card.dataset.file);
       if (!file) return;
-      // Evita que los project abran dos veces si se hace dblclick encima de los botones
       if (file.kind === 'project' && Array.isArray(file.links)) return;
       openFile(file);
     });
@@ -995,11 +1107,11 @@ function openFolder(name){
   windowEl.appendChild(content);
   document.body.appendChild(windowEl);
 
-  // Tamaño/posición inicial
+  // Tamaño / posición inicial
   const W = Math.min(860, Math.floor(window.innerWidth * 0.9));
   const H = Math.min(580, Math.floor(window.innerHeight * 0.8));
-  windowEl.style.left = ((window.innerWidth - W)/2) + 'px';
-  windowEl.style.top  = ((window.innerHeight - H)/2) + 'px';
+  windowEl.style.left = ((window.innerWidth - W) / 2) + 'px';
+  windowEl.style.top = ((window.innerHeight - H) / 2) + 'px';
   windowEl.style.width = W + 'px';
   windowEl.style.height = H + 'px';
   windowEl.style.display = 'block';
@@ -1009,31 +1121,33 @@ function openFolder(name){
 
   // Botones
   header.querySelector('.close-btn').addEventListener('click', () => {
-      // Eliminar la ventana
-      windowEl.remove();
-
-      // Buscar y eliminar el botón asociado en la taskbar
-      const key = name.toLowerCase().replace(/\s+/g, '-');
-      const taskBtn = document.querySelector(`.task-btn[data-task="${key}"]`);
-      if (taskBtn) taskBtn.remove();
+    windowEl.remove();
+    const key = name.toLowerCase().replace(/\s+/g, '-');
+    const taskBtn = document.querySelector(`.task-btn[data-task="${key}"]`);
+    if (taskBtn) taskBtn.remove();
   });
-  header.querySelector('.min-btn').addEventListener('click',()=> windowEl.style.display='none');
+  header.querySelector('.min-btn').addEventListener('click', () => {
+    windowEl.style.display = 'none';
+  });
 
   let maximized = false;
-  header.querySelector('.max-btn').addEventListener('click',()=>{
-    if(!maximized){
+  header.querySelector('.max-btn').addEventListener('click', () => {
+    if (!maximized) {
       windowEl.dataset.prev = JSON.stringify({
         left: windowEl.style.left, top: windowEl.style.top,
         width: windowEl.style.width, height: windowEl.style.height
       });
-      windowEl.style.left = 0; windowEl.style.top = 0;
-      windowEl.style.width = window.innerWidth+'px';
-      windowEl.style.height = (window.innerHeight-40)+'px';
+      windowEl.style.left = 0;
+      windowEl.style.top = 0;
+      windowEl.style.width = window.innerWidth + 'px';
+      windowEl.style.height = (window.innerHeight - 40) + 'px';
       maximized = true;
     } else {
       const prev = JSON.parse(windowEl.dataset.prev);
-      windowEl.style.left = prev.left; windowEl.style.top = prev.top;
-      windowEl.style.width = prev.width; windowEl.style.height = prev.height;
+      windowEl.style.left = prev.left;
+      windowEl.style.top = prev.top;
+      windowEl.style.width = prev.width;
+      windowEl.style.height = prev.height;
       maximized = false;
     }
   });
@@ -1043,6 +1157,7 @@ function openFolder(name){
     startDrag(windowEl, e);
   });
 }
+
 
 
 

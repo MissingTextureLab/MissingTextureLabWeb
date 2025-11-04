@@ -1,167 +1,202 @@
-// about.js — Ventana “Sobre mí” con texto + fondo 3D reactivo
+// about.js — igual que antes pero con contraste y fondo oscuro
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
-
-// ========= Crear ventana =========
-export function openAboutWindow() {
-  // Evitar duplicados
-  if (document.getElementById("about-window")) return;
-
-  const win = document.createElement("div");
-  win.id = "about-window";
-  win.className = "window window-about";
-  win.innerHTML = `
-    <div class="window-header">Sobre mí</div>
-    <div class="window-content" id="about-container">
-      <canvas id="bg-scene"></canvas>
-      <div id="about-text"><pre>
-> Andrés Vidal Martín Martín
-> artista_educador_tecnólogo / MissingTexture_Lab
-
-Mi práctica se mueve entre la arquitectura virtual,
-los sistemas interactivos y los rituales audiovisuales.
-Trabajo con el error como lenguaje,
-el glitch como identidad y la transparencia como ética.
-
-Cada obra es un sistema y un síntoma:
-una negociación entre la mirada humana y el algoritmo.
-
-> current_mode: hybrid
-> favorite_error: missing texture
-      </pre></div>
-    </div>
-  `;
-  document.body.appendChild(win);
-
-  injectStyles();
-  initScene();
-}
-
-// ========= Estilos dinámicos =========
-function injectStyles() {
-  if (document.getElementById("about-style")) return;
-  const style = document.createElement("style");
-  style.id = "about-style";
-  style.textContent = `
-  .window-about {
-    position: absolute;
-    width: 680px;
-    height: 460px;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    background: #000;
-    border: 1px solid #00ff88;
-    display: flex;
-    flex-direction: column;
-    resize: none;
-    overflow: hidden;
-    z-index: 2000;
-  }
-
-  .window-about .window-header {
-    background: #002b1f;
-    color: #00ff88;
-    font-family: 'Cascadia Code', monospace;
-    font-size: 0.9rem;
-    padding: 6px 10px;
-    cursor: grab;
-    user-select: none;
-    border-bottom: 1px solid #00ff88;
-  }
-
-  #about-container {
-    position: relative;
-    flex: 1;
-    overflow: hidden;
-  }
-
-  #bg-scene {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 0;
-  }
-
-  #about-text {
-    position: relative;
-    z-index: 1;
-    color: #00ff88;
-    font-family: 'Cascadia Code', monospace;
-    font-size: 0.9rem;
-    padding: 1.5rem;
-    line-height: 1.5;
-    overflow-y: scroll;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.4);
-  }
-
-  #about-text::-webkit-scrollbar { width: 4px; }
-  #about-text::-webkit-scrollbar-thumb {
-    background: #00ff88;
-    border-radius: 2px;
-  }
-  `;
-  document.head.appendChild(style);
-}
-
-// ========= Fondo 3D reactivo =========
-function initScene() {
-  const canvas = document.getElementById("bg-scene");
+export function initAbout3D() {
+  const canvas = document.getElementById("about-canvas");
   if (!canvas) return;
+  const container = canvas.parentElement;
 
+  // === ESCENA Y CÁMARA ===
   const scene = new THREE.Scene();
+
+  // Fondo oscuro semitransparente para ganar contraste
+  const backgroundColor = new THREE.Color(0x0b0b0b);
+  scene.background = backgroundColor;
+
   const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
-  camera.position.z = 3;
+  camera.position.set(0, 0, 6);
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  const container = document.getElementById("about-container");
-  renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.3; // 🔆 un poco más de brillo
 
-  // ---- Partículas ----
-  const particles = new THREE.Group();
-  const geometry = new THREE.SphereGeometry(0.02, 8, 8);
-  const material = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
-  for (let i = 0; i < 200; i++) {
-    const p = new THREE.Mesh(geometry, material);
-    p.position.set((Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6);
-    particles.add(p);
+  // === ILUMINACIÓN ===
+  const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+  const keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
+  keyLight.position.set(3, 3, 5);
+  const rimLight = new THREE.PointLight(0x99ccff, 1.2, 25);
+  rimLight.position.set(-3, -2, 4);
+  scene.add(ambient, keyLight, rimLight);
+
+  // === MODELOS ===
+  const loader = new GLTFLoader();
+  const paths = [
+    './models/about/adapter.glb',
+    './models/about/frank.glb',
+    './models/about/hornet.glb',
+    './models/about/metronome.glb'
+  ];
+
+  const objs = [];
+  let active = 0;
+  const backgroundClones = [];
+
+  function scaleToFit(model) {
+    const fov = camera.fov * (Math.PI / 180);
+    const dist = Math.abs(camera.position.z);
+    const height = 2 * Math.tan(fov / 2) * dist;
+    const scaleFactor = height / 2.5;
+    model.scale.setScalar(scaleFactor);
   }
-  scene.add(particles);
 
-  // ---- Luces ----
-  scene.add(new THREE.AmbientLight(0x00ff88, 0.3));
-  const pointLight = new THREE.PointLight(0x00ff88, 1.5);
-  pointLight.position.set(2, 2, 3);
-  scene.add(pointLight);
-
-  // ---- Scroll reactivo ----
-  const textEl = document.getElementById("about-text");
-  let scrollY = 0;
-  textEl.addEventListener("scroll", () => {
-    const maxScroll = textEl.scrollHeight - textEl.clientHeight;
-    scrollY = textEl.scrollTop / maxScroll;
+  // === Cargar modelos ===
+  paths.forEach((p, i) => {
+    loader.load(
+      p,
+      gltf => {
+        const model = gltf.scene;
+        model.visible = (i === 0);
+        scaleToFit(model);
+        model.traverse(c => {
+          if (c.isMesh) {
+            // ⚙️ Materiales más metálicos y luminosos
+            c.material.metalness = 1.0;
+            c.material.roughness = 0.2;
+            c.material.color = new THREE.Color().setHSL(0.55 + Math.random() * 0.1, 0.8, 0.6);
+            c.material.envMapIntensity = 1.5;
+          }
+        });
+        scene.add(model);
+        objs[i] = model;
+        if (i === 0) createBackgroundClones(model);
+      },
+      undefined,
+      e => console.warn(`Error cargando ${p}`, e)
+    );
   });
 
-  // ---- Animación ----
+  // === Crear copias de fondo ===
+  function createBackgroundClones(model) {
+    clearBackgroundClones();
+    const count = 25;
+    for (let i = 0; i < count; i++) {
+      const clone = model.clone(true);
+      clone.traverse(c => {
+        if (c.isMesh) {
+          c.material = c.material.clone();
+          c.material.transparent = true;
+          c.material.opacity = 0.25; // 🔆 más visibles
+          c.material.metalness = 0.8;
+          c.material.roughness = 0.3;
+        }
+      });
+      const scale = 0.2 + Math.random() * 0.4;
+      clone.scale.multiplyScalar(scale);
+      clone.position.set(
+        (Math.random() - 0.5) * 20,
+        (Math.random() - 0.5) * 10,
+        (Math.random() - 0.5) * -15
+      );
+      clone.rotation.y = Math.random() * Math.PI;
+      clone.rotation.x = Math.random() * Math.PI * 0.2;
+      scene.add(clone);
+      backgroundClones.push({
+        mesh: clone,
+        drift: new THREE.Vector3(
+          (Math.random() - 0.5) * 0.002,
+          (Math.random() - 0.5) * 0.002,
+          (Math.random() - 0.5) * 0.001
+        )
+      });
+    }
+  }
+
+  function clearBackgroundClones() {
+    backgroundClones.forEach(c => scene.remove(c.mesh));
+    backgroundClones.length = 0;
+  }
+
+  // === INTERACCIÓN RATÓN ===
+  let mouseX = 0, mouseY = 0;
+  let targetX = 0, targetY = 0;
+  container.addEventListener("mousemove", e => {
+    const r = container.getBoundingClientRect();
+    mouseX = (e.clientX - r.width / 2) / (r.width / 2);
+    mouseY = (e.clientY - r.height / 2) / (r.height / 2);
+  });
+
+  container.addEventListener("click", () => {
+    if (!objs.length) return;
+    objs[active].visible = false;
+    active = (active + 1) % objs.length;
+    objs[active].visible = true;
+    createBackgroundClones(objs[active]);
+  });
+
+  // === HYDRA OVERLAY ===
+  const hydraCanvas = document.createElement("canvas");
+  Object.assign(hydraCanvas.style, {
+    position: "absolute", inset: 0,
+    pointerEvents: "none", width: "100%", height: "100%"
+  });
+  container.appendChild(hydraCanvas);
+
+  const hydra = new Hydra({
+    canvas: hydraCanvas,
+    detectAudio: false,
+    makeGlobal: true
+  });
+
+  s0.init({ src: renderer.domElement });
+  src(s0)
+    .contrast(1.3) // 💪 más contraste
+    .saturate(1.2)
+    .colorama(() => 0.4 + Math.abs(targetY) * 0.3)
+    .blend(o0, 0.4)
+    .out(o0);
+
+  // === ANIMACIÓN ===
+  let t = 0;
   function animate() {
     requestAnimationFrame(animate);
-    particles.rotation.y += 0.002;
-    particles.rotation.x = scrollY * 2 * Math.PI;
-    camera.position.z = 3 + scrollY * 1.5;
+    t += 0.01;
+    targetX += (mouseX - targetX) * 0.05;
+    targetY += (mouseY - targetY) * 0.05;
+
+    const obj = objs[active];
+    if (obj) {
+      obj.rotation.y += 0.012;
+      obj.rotation.x = Math.sin(t * 0.4) * 0.1 + targetY * 0.15;
+    }
+
+    camera.position.x += (targetX * 1.2 - camera.position.x) * 0.05;
+    camera.position.y += (-targetY * 0.3 - camera.position.y) * 0.05;
+    camera.lookAt(0, 0, 0);
+
+    backgroundClones.forEach(c => {
+      c.mesh.position.add(c.drift);
+      c.mesh.rotation.y += 0.002;
+    });
+
     renderer.render(scene, camera);
+    render(o0);
   }
   animate();
 
-  // ---- Resize dinámico ----
-  window.addEventListener("resize", () => {
+  // === RESPONSIVE ===
+  function resize() {
     const w = container.clientWidth;
     const h = container.clientHeight;
+    renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    renderer.setSize(w, h);
-  });
+    hydra.setResolution(w, h);
+    objs.forEach(o => o && scaleToFit(o));
+  }
+  new ResizeObserver(resize).observe(container);
+  window.addEventListener("resize", resize);
+  resize();
 }
