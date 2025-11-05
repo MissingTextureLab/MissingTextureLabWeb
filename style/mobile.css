@@ -15,3 +15,13 @@ body.mobile-mode .window {
   max-height: 100vh;
   border-radius: 8px;
 }
+/* 💡 En móvil también visible */
+body.mobile-mode #taskbar {
+  display: flex !important;
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: var(--taskbar-h, 48px) !important;
+  z-index: 10000 !important;
+}

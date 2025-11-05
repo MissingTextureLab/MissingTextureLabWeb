@@ -1323,6 +1323,8 @@ if (isMobile) {
       if (!win) return;
 
       // inicia drag
+      const taskbarH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--taskbar-h')) || 48;
+      const maxTop = window.innerHeight - taskbarH - win.offsetHeight;
       const rect = win.getBoundingClientRect();
       const offsetX = e.touches[0].clientX - rect.left;
       const offsetY = e.touches[0].clientY - rect.top;

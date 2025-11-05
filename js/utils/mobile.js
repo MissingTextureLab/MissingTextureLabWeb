@@ -38,14 +38,17 @@ export function initMobileMode() {
   });
 
   // 🔹 Ajusta tamaño del escritorio al viewport
-  const desktop = document.getElementById("desktop");
+  const desktop = document.getElementById('desktop');
   if (desktop) {
-    desktop.style.width = "100vw";
-    desktop.style.height = "100vh";
-    desktop.style.overflow = "hidden";
-    desktop.style.position = "fixed";
-    desktop.style.top = "0";
-    desktop.style.left = "0";
+    Object.assign(desktop.style, {
+      width: '100vw',
+      height: 'calc(100vh - var(--taskbar-h, 48px))',
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      overflow: 'hidden',
+      zIndex: '1'
+    });
   }
 
   // 🔹 Oculta la ventana del asistente si existe
