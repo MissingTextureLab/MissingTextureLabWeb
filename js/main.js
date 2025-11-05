@@ -6,6 +6,7 @@ import { initAbout3D } from './apps/about.js';
 import { openLiveLabWindow } from './apps/live_lab.js';
 import { initMobileMode } from './utils/mobile.js';
 
+
 window.openLiveLabWindow = openLiveLabWindow;
 initMobileMode();
 
