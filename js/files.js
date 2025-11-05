@@ -7,6 +7,16 @@ let activeWindow = null;
 let offsetX = 0;
 let offsetY = 0;
 
+// ========= Viewport Fix para móviles reales =========
+function applyViewportFix() {
+  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  document.documentElement.style.setProperty('--real-vh', `${vh}px`);
+}
+
+applyViewportFix();
+window.addEventListener('resize', applyViewportFix);
+window.addEventListener('orientationchange', applyViewportFix);
+
 // ✅ Definición segura antes de usarla
 function safeQueryAllGrid(selector) {
   const el = document.getElementById('grid-overlay');

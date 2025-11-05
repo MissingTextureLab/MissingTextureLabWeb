@@ -1,3 +1,28 @@
+#desktop {
+  width: 100vw;
+  height: calc(var(--real-vh) - var(--taskbar-h, 48px));
+  position: fixed;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  background: var(--desktop-bg, #0b0b0b);
+}
+
+#taskbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: var(--taskbar-h, 48px);
+  z-index: 9999;
+  background: rgba(15,15,20,0.85);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255,255,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
 body.mobile-mode, body.mobile-mode #desktop {
   width: 100vw !important;
   height: 100vh !important;
