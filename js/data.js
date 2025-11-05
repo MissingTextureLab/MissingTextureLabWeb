@@ -7,7 +7,7 @@ export let folders = [
     type: "app",                
     action: "openLiveLabWindow"
   },  
-  { name: "Educación",    x: 1, y: 1, icon: "icons/Foldertext.png",   type: "folder" },
+  { name: "Educación",    x: 1, y: 1, icon: "icons/foldertext.png",   type: "folder" },
   { name: "Futuro",x: 0, y: 2, icon: "icons/FolderRandom.png", type: "folder" },
  
 ];
