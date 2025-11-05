@@ -1013,7 +1013,7 @@ function openFolder(name) {
     });
 
     // Inicializar la escena Three.js
-    import('./js/about.js').then(m => {
+    import('./about.js').then(m => {
       if (m.initAbout3D) m.initAbout3D();
     });
 

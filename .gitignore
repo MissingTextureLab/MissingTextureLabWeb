@@ -1,0 +1,9 @@
+# Entornos locales
+.env
+.env.local
+.env.*.local
+
+# Archivos de configuración sensible
+.vscode/
+.DS_Store
+node_modules/

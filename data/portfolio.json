@@ -1,0 +1,20 @@
+[
+  {
+    "id": "about/001",
+    "title": "Bio corta",
+    "section": "about",
+    "text": "Andrés Vidal (MissingTexture_Lab) es artista-educador-tecnólogo. Trabaja con glitch, VR/Unity, TouchDesigner, Strudel/Hydra..."
+  },
+  {
+    "id": "project/vr-gallery-2025",
+    "title": "VR Gallery — instalación multi-pantalla",
+    "section": "projects",
+    "text": "Instalación VR en Unity URP con hand tracking. Pantallas muestran imágenes y vídeos generados a partir de la palabra final del visitante..."
+  },
+  {
+    "id": "music/shoegaze-mathrock",
+    "title": "Pieza piano (shoegaze x math rock)",
+    "section": "music",
+    "text": "Composición original que combina armonías de shoegaze con estructuras rítmicas de math rock..."
+  }
+]

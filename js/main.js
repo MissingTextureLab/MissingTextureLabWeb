@@ -1,8 +1,8 @@
 import { renderDesktop } from './desktop.js';
 import { initUI } from './ui.js';
 import './windows.js';
-import './movement1.js';
-import { initAbout3D } from './js/about.js';
+import { arrangeIcons } from './movement1.js';
+import { initAbout3D } from './about.js';
 
 
 export const filesByFolder = {

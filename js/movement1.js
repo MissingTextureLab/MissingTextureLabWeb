@@ -1,5 +1,4 @@
 // movement.js — optimización de arrastre y cuadrícula dinámica
-
 import { folders, saveFolders, GRID_SIZE, GRID_PADDING } from './data.js';
 
 // referencias y estado local
@@ -20,10 +19,19 @@ export function rebuildPosIndex() {
 // obtener posición de cuadrícula desde coordenadas del cursor
 function getGridPosition(clientX, clientY) {
   const rect = desktop().getBoundingClientRect();
+
+  // posición del cursor relativa al área del escritorio
   const x = clientX - rect.left - GRID_PADDING;
-  const y = clientY - rect.top - GRID_PADDING;
-  const gridX = Math.max(0, Math.round(x / GRID_SIZE));
-  const gridY = Math.max(0, Math.round(y / GRID_SIZE));
+  const y = clientY - rect.top  - GRID_PADDING;
+
+  // límites máximos de celdas visibles
+  const maxCols = Math.floor((rect.width  - GRID_PADDING * 2) / GRID_SIZE);
+  const maxRows = Math.floor((rect.height - GRID_PADDING * 2) / GRID_SIZE);
+
+  // calcular celda en base al cursor centrado
+  const gridX = Math.max(0, Math.min(maxCols - 1, Math.floor(x / GRID_SIZE)));
+  const gridY = Math.max(0, Math.min(maxRows - 1, Math.floor(y / GRID_SIZE)));
+
   return { x: gridX, y: gridY };
 }
 
@@ -50,12 +58,10 @@ export function moveIconToGrid(iconEl, gridX, gridY) {
       otherEl.style.top  = `${GRID_PADDING + other.y * GRID_SIZE}px`;
     }
   } else {
-    // movimiento libre
     current.x = gridX;
     current.y = gridY;
   }
 
-  // mover visualmente el icono actual
   iconEl.style.left = `${GRID_PADDING + current.x * GRID_SIZE}px`;
   iconEl.style.top  = `${GRID_PADDING + current.y * GRID_SIZE}px`;
 
@@ -76,8 +82,9 @@ function ensureGrid() {
 
   gridContainer.innerHTML = '';
 
-  const maxCols = Math.floor((window.innerWidth  - GRID_PADDING * 2) / GRID_SIZE);
-  const maxRows = Math.floor((window.innerHeight - 60 - GRID_PADDING * 2) / GRID_SIZE);
+  const rect = desktop().getBoundingClientRect();
+  const maxCols = Math.floor((rect.width  - GRID_PADDING * 2) / GRID_SIZE);
+  const maxRows = Math.floor((rect.height - GRID_PADDING * 2) / GRID_SIZE);
   const frag = document.createDocumentFragment();
 
   for (let x = 0; x < maxCols; x++) {
@@ -122,7 +129,7 @@ export function highlightNearestGrid(clientX, clientY) {
   }
 }
 
-// ——— Arrastre y soltar con rAF ———
+// ——— Arrastre y soltar con rAF (manteniendo la mecánica original) ———
 function bindDesktopEventsOnce() {
   if (desktopEventsBound) return;
   desktopEventsBound = true;
@@ -133,6 +140,13 @@ function bindDesktopEventsOnce() {
   desktop().addEventListener('dragstart', (e) => {
     const icon = e.target.closest('.icon');
     if (!icon) return;
+
+    // aseguramos que el cursor "agarre" el centro
+    const rect = icon.getBoundingClientRect();
+    const offsetX = rect.width / 2;
+    const offsetY = rect.height / 2;
+    e.dataTransfer.setDragImage(icon, offsetX, offsetY);
+
     isDragging = true;
     draggedIcon = icon;
     showGrid();
@@ -173,7 +187,8 @@ function bindDesktopEventsOnce() {
 export function arrangeIcons() {
   folders.sort((a, b) => a.name.localeCompare(b.name));
   let x = 0, y = 0;
-  const maxRows = Math.floor((window.innerHeight - 60 - GRID_PADDING * 2) / GRID_SIZE);
+  const rect = desktop().getBoundingClientRect();
+  const maxRows = Math.floor((rect.height - GRID_PADDING * 2) / GRID_SIZE);
 
   for (const f of folders) {
     f.x = x;
