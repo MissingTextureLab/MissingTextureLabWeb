@@ -7,6 +7,8 @@ export let activeWindow = null;
 export let offsetX = 0;
 export let offsetY = 0;
 
+
+
 function normalizeName(name) {
   return name.toLowerCase().replace(/\s+/g, '-');
 }

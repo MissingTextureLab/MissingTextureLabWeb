@@ -1,6 +1,7 @@
 import { folders } from './data.js';
 import { bringToFront, addToTaskbar } from './windows.js';
 
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const gridEl = document.getElementById('grid-overlay');
 let activeWindow = null;
 let offsetX = 0;
@@ -478,7 +479,15 @@ function openFile(file) {
       offsetY = e.clientY - win.getBoundingClientRect().top;
       bringToFront(win);
     });
-
+    if (isMobile) {
+    win.style.position = 'fixed';
+    win.style.inset = '0';
+    win.style.width = '100vw';
+    win.style.height = '100vh';
+    win.style.borderRadius = '0';
+    win.style.zIndex = 9999;
+    win.style.overflow = 'auto';
+    }
     return; // 
   }
 
@@ -518,11 +527,12 @@ function openFile(file) {
     }
   });
 
-  // Drag ventana
-header.addEventListener('mousedown', e => {
-  if (e.target.closest('.window-buttons')) return;
-  startDrag(win, e);
-});
+  if (!isMobile) {
+    header.addEventListener('mousedown', e => {
+      if (e.target.closest('.window-buttons')) return;
+      startDrag(windowEl, e);
+    });
+  }
 }
 
 // 6) Sobrescribe openFolder para listar archivos con miniaturas
@@ -974,15 +984,23 @@ function openFolder(name) {
     windowEl.appendChild(content);
     document.body.appendChild(windowEl);
 
-    // Tamaño / posición inicial
-    const W = Math.min(900, Math.floor(window.innerWidth * 0.9));
-    const H = Math.min(600, Math.floor(window.innerHeight * 0.8));
-    windowEl.style.left = ((window.innerWidth - W) / 2) + 'px';
-    windowEl.style.top = ((window.innerHeight - H) / 2) + 'px';
-    windowEl.style.width = W + 'px';
-    windowEl.style.height = H + 'px';
+    if (isMobile) {
+      windowEl.style.position = 'fixed';
+      windowEl.style.inset = '0';
+      windowEl.style.width = '100vw';
+      windowEl.style.height = '100vh';
+      windowEl.style.borderRadius = '0';
+      windowEl.style.zIndex = 9999;
+      windowEl.style.overflowY = 'auto';
+    } else {
+      const W = Math.min(860, Math.floor(window.innerWidth * 0.9));
+      const H = Math.min(580, Math.floor(window.innerHeight * 0.8));
+      windowEl.style.left = ((window.innerWidth - W) / 2) + 'px';
+      windowEl.style.top = ((window.innerHeight - H) / 2) + 'px';
+      windowEl.style.width = W + 'px';
+      windowEl.style.height = H + 'px';
+    }
     windowEl.style.display = 'block';
-
     bringToFront(windowEl);
     addToTaskbar(name);
 
@@ -1020,11 +1038,12 @@ function openFolder(name) {
       }
     });
 
-    // Permitir arrastrar la ventana
-    header.addEventListener('mousedown', e => {
-      if (e.target.closest('.window-buttons')) return;
-      startDrag(windowEl, e);
-    });
+    if (!isMobile) {
+      header.addEventListener('mousedown', e => {
+        if (e.target.closest('.window-buttons')) return;
+        startDrag(windowEl, e);
+      });
+    }
 
     // Inicializar la escena Three.js
     import('./apps/about.js').then(m => {
@@ -1166,10 +1185,12 @@ function openFolder(name) {
     }
   });
 
-  header.addEventListener('mousedown', e => {
-    if (e.target.closest('.window-buttons')) return;
-    startDrag(windowEl, e);
-  });
+  if (!isMobile) {
+    header.addEventListener('mousedown', e => {
+      if (e.target.closest('.window-buttons')) return;
+      startDrag(windowEl, e);
+    });
+  }
 }
 
 
@@ -1238,3 +1259,145 @@ export {
   openFile,
   startDrag
 };
+
+
+
+// =============================
+// 📱 Modo móvil ajustado
+// =============================
+
+if (isMobile) {
+  document.body.classList.add('mobile-mode');
+
+  // 1️⃣ Ajusta escritorio al tamaño del viewport
+  const desktop = document.getElementById('desktop');
+  if (desktop) {
+    Object.assign(desktop.style, {
+      width: '100vw',
+      height: '100vh',
+      position: 'fixed',
+      inset: '0',
+      overflow: 'hidden'
+    });
+  }
+
+  // 2️⃣ Oculta el asistente si está visible
+  const assistant = document.querySelector('.window-assistant');
+  if (assistant) assistant.style.display = 'none';
+
+  // 3️⃣ Sustituye el doble clic por un solo clic para abrir carpetas/archivos
+  document.addEventListener('click', (e) => {
+    const icon = e.target.closest('.icon');
+    const card = e.target.closest('.file-card');
+    const linkBtn = e.target.closest('.file-link-btn');
+
+    // 👉 Si hace tap en una tarjeta de archivo
+    if (card) {
+      const data = card.dataset.file;
+      if (data) {
+        const file = JSON.parse(decodeURIComponent(data));
+        openFile(file);
+      }
+      return;
+    }
+
+    // 👉 Si pulsa un botón de link en un proyecto
+    if (linkBtn) {
+      const link = JSON.parse(decodeURIComponent(linkBtn.dataset.link));
+      if (link) openFile(link);
+      return;
+    }
+
+    // 👉 Si pulsa un icono del escritorio
+    if (icon) {
+      const name = icon.textContent.trim();
+      openFolder(name);
+    }
+  }, { passive: true });
+
+  // 4️⃣ 🔹 Mantén el drag en ventanas, pero no en iconos
+  document.addEventListener('touchstart', (e) => {
+    const header = e.target.closest('.window-header');
+    if (header && !e.target.closest('.window-buttons')) {
+      const win = header.parentElement;
+      if (!win) return;
+
+      // inicia drag
+      const rect = win.getBoundingClientRect();
+      const offsetX = e.touches[0].clientX - rect.left;
+      const offsetY = e.touches[0].clientY - rect.top;
+
+      bringToFront(win);
+
+      function onTouchMove(ev) {
+        ev.preventDefault();
+        const x = ev.touches[0].clientX - offsetX;
+        const y = ev.touches[0].clientY - offsetY;
+        win.style.left = `${Math.max(0, Math.min(window.innerWidth - rect.width, x))}px`;
+        win.style.top = `${Math.max(0, Math.min(window.innerHeight - rect.height, y))}px`;
+      }
+
+      function onTouchEnd() {
+        document.removeEventListener('touchmove', onTouchMove);
+        document.removeEventListener('touchend', onTouchEnd);
+      }
+
+      document.addEventListener('touchmove', onTouchMove, { passive: false });
+      document.addEventListener('touchend', onTouchEnd);
+    }
+  }, { passive: true });
+}
+
+// =============================
+// 🧪 Ajuste mejorado para Live Lab (sin desbordes)
+// =============================
+function fixLiveLabWindowSize() {
+  const win = document.querySelector('.window-livelab, #win-Lab, [id*="LiveLab"]');
+  if (!win) return;
+
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const margin = isMobile ? 0 : 40;
+
+  // --- Medidas base ---
+  const rect = win.getBoundingClientRect();
+  const W = Math.min(rect.width, vw - margin);
+  const H = Math.min(rect.height, vh - margin);
+
+  // --- Ajustes visuales comunes ---
+  Object.assign(win.style, {
+    position: 'fixed',
+    zIndex: 9999,
+    overflow: 'hidden',
+    maxWidth: `${vw - margin}px`,
+    maxHeight: `${vh - margin}px`
+  });
+
+  // --- En móvil: fullscreen ---
+  if (isMobile) {
+    Object.assign(win.style, {
+      left: '0',
+      top: '0',
+      width: '100vw',
+      height: '100vh',
+      borderRadius: '0',
+      overflow: 'auto',
+      touchAction: 'none'
+    });
+    return;
+  }
+
+  // --- En escritorio: centrado con límite ---
+  const left = Math.max(0, Math.min((vw - W) / 2, vw - W - margin / 2));
+  const top  = Math.max(0, Math.min((vh - H) / 2, vh - H - margin / 2));
+
+  win.style.left = `${left}px`;
+  win.style.top  = `${top}px`;
+  win.style.width  = `${W}px`;
+  win.style.height = `${H}px`;
+}
+
+// Reaplica cada vez que cambia el DOM o se redimensiona
+const labObserver = new MutationObserver(() => fixLiveLabWindowSize());
+labObserver.observe(document.body, { childList: true, subtree: true });
+window.addEventListener('resize', fixLiveLabWindowSize);

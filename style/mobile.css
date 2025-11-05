@@ -1,0 +1,17 @@
+body.mobile-mode, body.mobile-mode #desktop {
+  width: 100vw !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+  margin: 0;
+  padding: 0;
+}
+
+body.mobile-mode .window-assistant {
+  display: none !important;
+}
+
+body.mobile-mode .window {
+  max-width: 100vw;
+  max-height: 100vh;
+  border-radius: 8px;
+}

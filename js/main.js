@@ -4,8 +4,13 @@ import './windows.js';
 import { arrangeIcons } from './utils/movement1.js';
 import { initAbout3D } from './apps/about.js';
 import { openLiveLabWindow } from './apps/live_lab.js';
+import { initMobileMode } from './utils/mobile.js';
 
 window.openLiveLabWindow = openLiveLabWindow;
+initMobileMode();
+
+export const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+if (isMobile) document.body.classList.add('mobile');
 
 export const filesByFolder = {
   "About": [
