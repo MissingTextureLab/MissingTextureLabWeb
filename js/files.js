@@ -79,7 +79,7 @@ const filesByFolder = {
     },
     {
       category: "Audiovisual y videoarte",
-      name: "Windows66",
+      name: "Windows 66",
       kind: "video",
       host: "youtube",
       url: "https://www.youtube.com/watch?v=yalKehB3IYo"
