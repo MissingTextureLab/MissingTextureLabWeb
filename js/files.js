@@ -382,7 +382,7 @@ function getEmbedHTML(file) {
 function slug(s){ return s.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-]/g,''); }
 function openFile(file) {
   // Si el archivo es "Sobre mí", abrimos la ventana personalizada
-
+  
 
   // resto de tus condiciones normales
   if (file.type === "folder") {
@@ -909,7 +909,21 @@ function openFolder(name) {
 
   const folder = folders.find(f => f.name === name);
   const files = folder?.files ?? [];
+  // ================================
+  // 🧪 CASO ESPECIAL: carpeta "Lab"
+  // ================================
+  if (name === "Lab") {
+    // Si la función global está disponible, úsala
+    if (typeof window.openLiveLabWindow === 'function') {
+      window.openLiveLabWindow();
+      return; // no continuar con el resto
+    }
 
+    // Si no está cargada, mostramos aviso y salimos
+    console.warn('⚠ No se pudo abrir el Live Lab: openLiveLabWindow no encontrada');
+    alert('La app Live Lab no está disponible o no se ha cargado aún.');
+    return;
+  }
   // ================================
   // 🟣 CASO ESPECIAL: carpeta "Sobre mí"
   // ================================
@@ -1013,7 +1027,7 @@ function openFolder(name) {
     });
 
     // Inicializar la escena Three.js
-    import('./about.js').then(m => {
+    import('./apps/about.js').then(m => {
       if (m.initAbout3D) m.initAbout3D();
     });
 

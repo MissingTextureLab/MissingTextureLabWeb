@@ -1,9 +1,11 @@
 import { renderDesktop } from './desktop.js';
 import { initUI } from './ui.js';
 import './windows.js';
-import { arrangeIcons } from './movement1.js';
-import { initAbout3D } from './about.js';
+import { arrangeIcons } from './utils/movement1.js';
+import { initAbout3D } from './apps/about.js';
+import { openLiveLabWindow } from './apps/live_lab.js';
 
+window.openLiveLabWindow = openLiveLabWindow;
 
 export const filesByFolder = {
   "About": [

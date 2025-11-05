@@ -1,6 +1,6 @@
 import { folders, GRID_SIZE, GRID_PADDING } from './data.js';
 import { openFolder, initFiles } from './files.js';
-import { initAssistant } from './assistant.js';
+import { initAssistant } from './apps/assistant.js';
 
 initAssistant();
 initFiles();
@@ -49,4 +49,4 @@ export function getSelectedFolder() {
   return folders.find(f => f.name === selectedFolder) || null;
 }
 
-export { arrangeIcons } from './movement1.js';
+export { arrangeIcons } from './utils/movement1.js';

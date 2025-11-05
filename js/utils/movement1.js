@@ -1,5 +1,5 @@
 // movement.js — optimización de arrastre y cuadrícula dinámica
-import { folders, saveFolders, GRID_SIZE, GRID_PADDING } from './data.js';
+import { folders, saveFolders, GRID_SIZE, GRID_PADDING } from '../data.js';
 
 // referencias y estado local
 const desktop = () => document.getElementById('desktop');

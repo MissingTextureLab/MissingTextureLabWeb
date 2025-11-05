@@ -1,7 +1,13 @@
+import { openLiveLabWindow } from './apps/live_lab.js';
+
 export let folders = [
   { name: "Sobre mí",                x: 0, y: 0, icon: "icons/FolderMipcl.png",  type: "folder" },
   { name: "Proyectos",               x: 1, y: 0, icon: "icons/FolderVirtual.png",   type: "folder" },
-  { name: "Lab", x: 0, y: 1, icon: "icons/FolderCode.png",  type: "folder" },
+  {   name: "Lab",
+  x: 0, y: 1,
+  icon: "icons/FolderCode.png",
+  type: "folder",
+  action: openLiveLabWindow},
   { name: "Educación",    x: 1, y: 1, icon: "icons/Foldertext.png",   type: "folder" },
   { name: "Futuro",x: 0, y: 2, icon: "icons/FolderRandom.png", type: "folder" },
  

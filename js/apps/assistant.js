@@ -1,8 +1,8 @@
 
 
 
-import { bringToFront } from './windows.js';
-import { startDrag } from './files.js';
+import { bringToFront } from '../windows.js';
+import { startDrag } from '../files.js';
 
 // ---------- Estado global ----------
 let Chat = { history: [], sending: false, bubbleEl: null, inputEl: null, sendBtn: null };
