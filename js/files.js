@@ -929,6 +929,12 @@ function openFolder(name) {
 
   const folder = folders.find(f => f.name === name);
   const files = folder?.files ?? [];
+  
+  //carpetaslinks
+  if (folder && folder.type === "link" && folder.url) {
+    window.open(folder.url, "_blank");
+    return; // ⛔️ no seguimos, no abrimos ventana
+  }
   // ================================
   // 🧪 CASO ESPECIAL: carpeta "Lab"
   // ================================

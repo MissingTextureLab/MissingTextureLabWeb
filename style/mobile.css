@@ -26,6 +26,15 @@ body.mobile-mode #taskbar {
   z-index: 10000 !important;
 }
 
-body.mobile-mode #desktop {
-  height: calc(var(--real-vh, 100vh) - var(--taskbar-h, 48px)) !important;
+body.mobile #desktop {
+  position: relative;
+  overflow: hidden;
+  height: 100vh;
+  touch-action: none;
+}
+
+body.mobile .icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
