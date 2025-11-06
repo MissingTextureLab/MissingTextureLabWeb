@@ -9,7 +9,7 @@ export let offsetY = 0;
 
 
 
-function normalizeName(name) {
+export function normalizeName(name) {
   return name.toLowerCase().replace(/\s+/g, '-');
 }
 
@@ -40,7 +40,6 @@ function ensureTaskbar() {
   return tb;
 }
 
-// ---- Añadir botón a la taskbar ----
 export function addToTaskbar(name, icon = '📁') {
   const tb = ensureTaskbar();
   const key = normalizeName(name);
@@ -57,29 +56,33 @@ export function addToTaskbar(name, icon = '📁') {
   `;
 
   btn.addEventListener('click', () => {
-  const win = document.getElementById(`win-${key}`);
+    // 🪟 intenta localizar cualquier ventana que tenga ese key
+    const win = document.querySelector(`.window[data-task="${key}"]`) ||
+                document.getElementById(`win-${key}`);
 
-    // Si la ventana no existe (se cerró), pide reabrirla
     if (!win) {
-      window.dispatchEvent(new CustomEvent('taskbar:open-folder', { detail: { name } }));
+      console.warn(`⚠️ No se encontró ventana para ${key}`);
       return;
     }
 
-    // Si está oculta → mostrarla
-    const isHidden = win.style.display === 'none' || getComputedStyle(win).display === 'none';
+    const isHidden = getComputedStyle(win).display === 'none';
     if (isHidden) {
+      // 🔄 restaurar
       win.style.display = 'block';
       bringToFront(win);
     } else {
-      // Si ya está visible, solo la trae al frente
+      // 🔝 traer al frente
       bringToFront(win);
     }
   });
 
   tb.appendChild(btn);
 }
+
+
 // ---- Crear ventana de propiedades ----
 export function openProperties(folder) {
+  
   if (!folder) return;
 
   const baseName = `Propiedades: ${folder.name}`;
@@ -110,6 +113,7 @@ export function openProperties(folder) {
       <span class="close-btn">✕</span>
     </div>
   `;
+  
 
   const content = document.createElement('div');
   content.className = 'window-content';
@@ -205,4 +209,6 @@ export function openProperties(folder) {
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
   });
+
 }
+

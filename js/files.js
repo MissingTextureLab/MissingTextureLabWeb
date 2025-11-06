@@ -1,5 +1,5 @@
 import { folders } from './data.js';
-import { bringToFront, addToTaskbar } from './windows.js';
+import { bringToFront, addToTaskbar,normalizeName } from './windows.js';
 
 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const gridEl = document.getElementById('grid-overlay');
@@ -918,6 +918,7 @@ function buildFileCard(file){
 
 // ============ openFolder (render por categorías + delegación de eventos) ============
 function openFolder(name) {
+  
 
   // Si ya existe la ventana, solo la traemos al frente
   const existing = document.getElementById(`win-${name}`);
@@ -929,6 +930,7 @@ function openFolder(name) {
 
   const folder = folders.find(f => f.name === name);
   const files = folder?.files ?? [];
+
   
   //carpetaslinks
   if (folder && folder.type === "link" && folder.url) {
@@ -955,8 +957,12 @@ function openFolder(name) {
   // ================================
   if (name === "Sobre mí") {
     const windowEl = document.createElement('div');
+
+    const key = normalizeName(name || folder.name || 'ventana');
+    windowEl.dataset.task = key;
     windowEl.className = 'window window-about3d';
     windowEl.id = `win-${name}`;
+
 
     // Header estándar
     const header = document.createElement('div');
@@ -1078,6 +1084,10 @@ function openFolder(name) {
   const windowEl = document.createElement('div');
   windowEl.className = 'window';
   windowEl.id = `win-${name}`;
+
+  const key = normalizeName(name || folder.name || 'ventana');
+  windowEl.dataset.task = key;
+  windowEl.id = `win-${key}`;
 
   const header = document.createElement('div');
   header.className = 'window-header';
