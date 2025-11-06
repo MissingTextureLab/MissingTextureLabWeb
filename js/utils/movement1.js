@@ -181,6 +181,19 @@ function bindDesktopEventsOnce() {
     draggedIcon = null;
     hideGrid();
   });
+  desktop().addEventListener('click', (e) => {
+    const icon = e.target.closest('.icon');
+
+    // Si clicas en el fondo (no en un icono ni en una ventana)
+    if (!icon) {
+      desktop().querySelectorAll('.icon.selected').forEach(el => el.classList.remove('selected'));
+      return;
+    }
+
+    // Si clicas en un icono: marcarlo y desmarcar los demás
+    desktop().querySelectorAll('.icon.selected').forEach(el => el.classList.remove('selected'));
+    icon.classList.add('selected');
+  });
 }
 
 // ——— Reorganizar iconos sin re-render completo ———

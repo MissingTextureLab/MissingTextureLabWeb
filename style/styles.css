@@ -414,7 +414,78 @@ body::before{
 ::-webkit-scrollbar-thumb { background: var(--frutiger-light); }
 ::-webkit-scrollbar-thumb:hover { background: var(--frutiger-purple); }
 
-/* Overlay del screensaver */
+#screensaver {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .6s ease;
+}
+#screensaver.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+#three-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 0;
+}
+
+#screensaver-logo {
+  position: relative;
+  width: 300px;           /* 🔹 más pequeño */
+  opacity: 0.35;           /* 🔹 semitransparente */
+  transition:
+    opacity 0.9s ease-in-out,     /* 🔹 transición más lenta y fluida */
+    transform 0.4s ease;
+  height: auto;
+  z-index: 1;
+  user-select: none;
+  -webkit-user-drag: none;
+  cursor: pointer;
+  transform: scale(1);
+  transition: transform 0.35s ease;
+}
+#screensaver-logo:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+#screensaver-logo.clicked {
+  transform: scale(0.9);
+  filter: drop-shadow(0 0 20px rgba(200,200,255,0.7));
+  transition: transform 0.1s ease, filter 0.1s ease;
+}
+
+/* animación al iniciar */
+#screensaver-logo.animate-in {
+  animation: logoPop 0.8s ease forwards;
+}
+
+@keyframes logoPop {
+  0%   { transform: scale(0.9); opacity: 0; }
+  60%  { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* flash al salir */
+#screensaver.flash {
+  animation: flashOut 0.25s ease;
+}
+
+
+/*
+
 #screensaver{
   position: fixed;
   inset: 0;
@@ -429,13 +500,13 @@ body::before{
 }
 #screensaver.active{ opacity: 1; pointer-events: all; }
 
-/* Contenedor para emitir el brillo por detrás de la imagen */
+
 .glow-wrap{
   position: relative;
   display: inline-block;
 }
 
-/* Halo 1 (ancho y suave) */
+
 .glow-wrap::before{
   content:"";
   position:absolute;
@@ -454,7 +525,7 @@ body::before{
   pointer-events: none;
 }
 
-/* Halo 2 (núcleo) */
+
 .glow-wrap::after{
   content:"";
   position:absolute;
@@ -473,7 +544,7 @@ body::before{
   pointer-events: none;
 }
 
-/* Imagen (300px ancho) */
+
 #screensaver-logo{
   width: 300px;
   height: auto;
@@ -482,11 +553,11 @@ body::before{
   z-index: 1;
   user-select: none;
   -webkit-user-drag: none;
-  transition: transform .35s ease; /* transición suave */
-  transform: scale(1);             /* estado por defecto */
+  transition: transform .35s ease; 
+  transform: scale(1);             
 }
 
-/* Hover: brillo más alto y logo grande mientras el ratón esté encima */
+
 .glow-wrap:hover::before{
   opacity: 1;
   filter: blur(95px);
@@ -501,14 +572,14 @@ body::before{
   transform: scale(1.08);
 }
 
-/* Entrada (al iniciar/apagar): sube glow desde 0 y hace leve zoom */
+
 @keyframes glowIntro {
   0%   { opacity: 0; transform: translate(-50%, -50%) scale(.8); filter: blur(6px); }
   60%  { opacity: .9; transform: translate(-50%, -50%) scale(1.05); filter: blur(36px); }
   100% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(30px); }
 }
 
-/* Flash de salida */
+
 @keyframes glowFlash {
   0%   { opacity: 1; filter: blur(30px); }
   60%  { opacity: 1; filter: blur(70px); }
@@ -522,9 +593,9 @@ body::before{
 #screensaver.flash .glow-wrap::before,
 #screensaver.flash .glow-wrap::after{
   animation: glowFlash .22s ease both;
-}
+}*/
 
-/* Pop del logo al aparecer */
+
 @keyframes logoPop {
   0%   { transform: scale(0.9); opacity: 0; }
   60%  { transform: scale(1.08); opacity: 1; }
@@ -532,8 +603,11 @@ body::before{
 }
 #screensaver-logo.animate-in { animation: logoPop 0.8s ease forwards; }
 
-/* ===== GRID UNIFORME, SIN HUECOS ===== */
-/* Grid cuadriculado (filas rectas) */
+
+
+
+
+
 .file-grid{
   display:grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));

@@ -312,3 +312,5 @@ export async function openLiveLabWindow() {
   createUI();
   console.log("✅ Live Lab listo (icono 📁 + barra gris OS).");
 }
+
+

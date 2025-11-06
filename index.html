@@ -1,62 +1,77 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OS Simulator Avanzado</title>
-<link href="https://fonts.googleapis.com/css2?family=Cascadia+Code:wght@400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./style/styles.css">
-<link rel="stylesheet" href="./style/live_lab.css">
-<link rel="stylesheet" href="./style/mobile.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OS Simulator Avanzado</title>
 
+  <!-- Fuente -->
+  <link href="https://fonts.googleapis.com/css2?family=Cascadia+Code:wght@400&display=swap" rel="stylesheet">
+
+  <!-- Estilos principales -->
+  <link rel="stylesheet" href="./style/styles.css" />
+  <link rel="stylesheet" href="./style/live_lab.css" />
+  <link rel="stylesheet" href="./style/mobile.css" />
 </head>
+
 <body>
 
-<div id="screensaver" class="hidden">
-  <div class="glow-wrap">
-    <img id="screensaver-logo" src="./missingLogo.png" alt="screensaver">
+  <!-- 💤 Screensaver -->
+  <div id="screensaver" class="active booting">
+    <canvas id="three-bg"></canvas>
+    <img id="screensaver-logo" src="./missingLogo.png" alt="screensaver" />
   </div>
-</div>
 
-<div class="desktop-icons" id="desktop"></div>
+  <!-- 💾 Escritorio -->
+  <div class="desktop-icons" id="desktop"></div>
 
-<div class="status-bar">
+  <!-- 🪟 Barra inferior -->
+  <div class="status-bar">
     <div style="display:flex;align-items:center;gap:8px;">
-        <div class="start-btn">👁️</div>
-        <div class="taskbar-icons" id="taskbar"></div>
+      <div class="start-btn">👁️</div>
+      <div class="taskbar-icons" id="taskbar"></div>
     </div>
     <div id="clock">12:00 PM</div>
-</div>
+  </div>
 
-<!-- Menú contextual -->
-<div class="context-menu" id="desktop-menu">
+  <!-- 📋 Menú contextual -->
+  <div class="context-menu" id="desktop-menu">
     <div class="context-menu-item" id="properties-menu">Properties</div>
     <div class="context-menu-item" id="arrange-icons">Arrange Icons</div>
-</div>
+  </div>
 
-<!-- Menú -->
-<div class="start-menu" id="start-menu">
+  <!-- 🪟 Menú inicio -->
+  <div class="start-menu" id="start-menu">
     <div class="start-menu-item" id="settings">
-        <div class="start-menu-icon">⚙️</div>
-        <span>Settings</span>
+      <div class="start-menu-icon">⚙️</div>
+      <span>Settings</span>
     </div>
     <div class="start-menu-item" id="shutdown">
-        <div class="start-menu-icon">❌</div>
-        <span>Shut Down</span>
+      <div class="start-menu-icon">❌</div>
+      <span>Shut Down</span>
     </div>
-</div>
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+  </div>
+
+  <!-- =======================
+       Módulos JS / Librerías
+  ======================== -->
+
+  <!-- Import map Three.js -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+    }
   }
-}
-</script>
-<script src="https://cdn.jsdelivr.net/npm/hydra-synth@1.4.0/dist/hydra-synth.js"></script>
+  </script>
 
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<script type="module" src="./js/main.js"></script>
+  <!-- Librerías auxiliares -->
+  <script src="https://cdn.jsdelivr.net/npm/hydra-synth@1.4.0/dist/hydra-synth.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
+  <!-- 🧠 Sistema principal -->
+  <script type="module" src="./js/main.js"></script>
 
+</body>
 </html>
