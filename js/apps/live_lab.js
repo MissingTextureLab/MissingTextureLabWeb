@@ -1,180 +1,314 @@
-// live_lab.js — versión estable (Hydra + Strudel @1.0.3 - licencia AGPL-3.0)
+// live_lab.js — Hydra + Strudel (ventana OS con header oscuro + icono lateral tipo carpeta)
 // -----------------------------------------------------------
-// Este módulo integra Hydra y Strudel en tu sistema OS de Live Lab.
-// Strudel se usa mediante @strudel/web, conforme a su licencia AGPL-3.0.
-// Más info: https://codeberg.org/uzu/strudel/src/branch/main/packages/web
+// Mantiene estética original, integra Hydra y Strudel con panel lateral desplegable mediante icono 📁
 // -----------------------------------------------------------
 
-let hydra, hydraCanvas, audioCtx;
+import { bringToFront, addToTaskbar } from "../windows.js";
 
-// ====== Cargar scripts externos ======
+let hydra;
+
+// ====== Loader ======
 const lazyLoadScript = (src) =>
   new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) return resolve();
     const s = document.createElement("script");
     s.src = src;
     s.async = true;
-    s.onload = () => {
-      console.log("✅ Cargado script:", src);
-      resolve();
-    };
-    s.onerror = (e) => {
-      console.error("❌ Error cargando script:", src, e);
-      reject(e);
-    };
+    s.onload = () => resolve();
+    s.onerror = (e) => reject(e);
     document.head.appendChild(s);
   });
 
-// ====== Asegurar librerías ======
-async function ensureLibs() {
-  console.log("🧠 Comprobando librerías...");
-  const loads = [];
+async function ensureHydra() {
   if (!window.Hydra)
-    loads.push(
-      lazyLoadScript("https://unpkg.com/hydra-synth@1.3.29/dist/hydra-synth.js")
-    );
-  if (typeof window.initStrudel !== "function")
-    loads.push(lazyLoadScript("https://unpkg.com/@strudel/web@1.0.3"));
-  if (loads.length) await Promise.all(loads);
-
-  console.log("📦 Librerías listas:", {
-    hydra: !!window.Hydra,
-    strudel: typeof window.initStrudel === "function",
-  });
+    await lazyLoadScript("https://unpkg.com/hydra-synth@1.3.29/dist/hydra-synth.js");
+  console.log("🎨 Hydra lista.");
 }
+
+// ====== Tarjetas ======
+const portfolioCodes = [
+  {
+    title: "🌊 Oceanic Pulse",
+    type: "strudel",
+    thumb: "icons/wave.png",
+    url: "https://strudel.cc/#Ly8gZmlsbCBpbiBnYXBzIGJldHdlZW4gZXZlbnRzCg...",
+  },
+  {
+    title: "🌈 Hydra Patch",
+    type: "hydra",
+    thumb: "icons/hydra.png",
+    code: `
+osc(10,0.1,1.2).modulate(noise(2)).kaleid(3).out(o0)
+`,
+  },
+];
 
 // ====== Crear interfaz ======
 function createUI() {
-  const lab = document.createElement("div");
-  lab.id = "live-lab";
-  lab.className = "window window-live-lab simple";
+  const win = document.createElement("div");
+  win.id = "live-lab";
+  win.className = "window window-live-lab simple";
+  Object.assign(win.style, {
+    position: "absolute",
+    top: "60px",
+    left: "80px",
+    width: "80vw",
+    height: "80vh",
+    display: "block",
+  });
+  win.dataset.task = "live-lab";
 
-  lab.innerHTML = `
-    <div class="lab-header">
+  // 🎛️ Header clásico gris oscuro
+  win.innerHTML = `
+    <div class="lab-header window-header">
       <span>🎛️ Live Lab</span>
-      <div class="lab-buttons">
-        <button id="lab-run">▶</button>
-        <button id="lab-stop">■</button>
-        <button id="lab-clear">⟳</button>
+      <div class="lab-buttons window-buttons">
+        <button class="min-btn">_</button>
+        <button class="max-btn">□</button>
+        <button class="close-btn">✕</button>
       </div>
     </div>
+
     <div class="lab-body">
-      <textarea id="lab-code">// escribe aquí tu código Hydra o Strudel</textarea>
-      <canvas id="lab-canvas"></canvas>
+      <div class="lab-left open" id="lab-left">
+        <div class="lab-cards" id="lab-cards"></div>
+      </div>
+
+      <div class="lab-main">
+        <iframe
+          id="strudel-frame"
+          title="Strudel Live Coding Environment"
+          style="width:100%;height:100%;border:0;display:none;"
+        ></iframe>
+
+        <div
+          id="hydra-container"
+          style="display:none;position:relative;width:100%;height:100%;"
+        >
+          <canvas id="hydra-canvas"></canvas>
+          <div id="hydra-editor">
+            <textarea id="hydra-code"></textarea>
+            <div class="hydra-controls">
+              <button id="hydra-run">▶ Run</button>
+              <button id="hydra-hide">🌓 Hide Editor</button>
+              <button id="hydra-stop">■ Stop</button>
+            </div>
+          </div>
+          <button id="hydra-show" title="Mostrar editor" style="display:none;">📝 Editor</button>
+        </div>
+
+        <div id="audio-unlock" style="display:none;">
+          <p>🔊 Haz click para habilitar el audio</p>
+        </div>
+      </div>
     </div>
-    <div id="lab-log"></div>
+
+    <button id="lab-folder-toggle" title="Mostrar/Ocultar panel">📁</button>
   `;
-  document.body.appendChild(lab);
 
-  const code = lab.querySelector("#lab-code");
-  const canvas = lab.querySelector("#lab-canvas");
-  const log = lab.querySelector("#lab-log");
-  canvas.width = 640;
-  canvas.height = 360;
+  document.body.appendChild(win);
 
-  document.getElementById("lab-run").onclick = () => runCode(code.value, canvas, log);
-  document.getElementById("lab-stop").onclick = stopAll;
-  document.getElementById("lab-clear").onclick = () => (code.value = "");
+  // Inicializa comportamiento
+  setupWindowControls(win);
+  setupPanelToggle();
+  populateCards();
+  setupHydraUI();
+
+  // Taskbar
+  addToTaskbar("Live Lab", "🎛️");
+  bringToFront(win);
+
+  // Autocargar primer patch
+  handleCardClick(portfolioCodes[0]);
 }
 
-// ====== Inicializar Strudel ======
-async function ensureStrudel() {
-  console.log("🎵 Inicializando Strudel...");
+// ====== Panel lateral (toggle con icono 📁) ======
+function setupPanelToggle() {
+  const panel = document.getElementById("lab-left");
+  const toggle = document.getElementById("lab-folder-toggle");
+  const labBody = document.querySelector(".lab-body");
+  if (!panel || !toggle || !labBody) return;
 
-  // 1️⃣ Inicializar solo una vez
-  if (!window.__strudelReady && typeof window.initStrudel === "function") {
-    console.log("🚀 Llamando a initStrudel() (from @strudel/web)...");
-    await window.initStrudel();
-    window.__strudelReady = true;
-    console.log("✅ Strudel inicializado (funciones globales activas)");
-  }
+  // Estado inicial abierto
+  panel.classList.add("open");
+  toggle.classList.add("active");
 
-  // 2️⃣ Crear o reanudar AudioContext
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    console.log("🎧 Creando nuevo AudioContext");
-  }
+  toggle.addEventListener("click", () => {
+    const isOpen = panel.classList.toggle("open");
+    toggle.classList.toggle("active", isOpen);
 
-  // Si sigue suspendido, esperar interacción
-  if (audioCtx.state === "suspended") {
-    console.log("⚠️ AudioContext suspendido — esperando click para reanudar...");
-    await new Promise((resolve) => {
-      const resume = () => {
-        audioCtx.resume().then(() => {
-          console.log("🎚 AudioContext reanudado manualmente");
-          window.removeEventListener("click", resume);
-          resolve();
-        });
-      };
-      window.addEventListener("click", resume);
-    });
-  }
-}
+    // 🔄 Cambio de emoji según estado
+    toggle.textContent = isOpen ? "📁" : "📂";
 
-
-// ====== Inicializar Hydra ======
-function ensureHydra(canvas) {
-  if (!window.Hydra) return console.warn("⚠️ Hydra no cargada todavía");
-  if (!hydra) {
-    hydra = new window.Hydra({ canvas, detectAudio: false, makeGlobal: true });
-    console.log("🎨 Hydra inicializada");
-  }
-  return hydra;
-}
-
-// ====== Ejecutar código ======
-async function runCode(code, canvas, log) {
-  log.textContent = "";
-  await ensureLibs();
-  if (audioCtx?.state === "suspended") await audioCtx.resume();
-  // --- HYDRA ---
-  if (code.includes("s0.") || code.includes(".out(")) {
-    ensureHydra(canvas);
-    try {
-      new Function(code)();
-      log.textContent = "🎨 Hydra ejecutado correctamente";
-    } catch (e) {
-      log.textContent = "❌ Hydra error: " + e.message;
-      console.error(e);
+    // 🔧 Ajuste visual
+    if (isOpen) {
+      panel.style.width = "220px";
+      labBody.style.gridTemplateColumns = "220px 1fr";
+    } else {
+      panel.style.width = "0";
+      labBody.style.gridTemplateColumns = "0 1fr";
     }
-    return;
-  }
+  });
+}
 
-  // --- STRUDEL ---
-  await ensureStrudel();
+// ====== Controles de ventana ======
+function setupWindowControls(win) {
+  const header = win.querySelector(".lab-header");
+  let maximized = false;
+  let prevRect = null;
+
+  // --- Mover ondrag ---
+  header.addEventListener("mousedown", (e) => {
+    if (e.target.closest(".lab-buttons")) return;
+    e.preventDefault();
+    bringToFront(win);
+
+    const rect = win.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+
+    function onMove(ev) {
+      const x = ev.clientX - offsetX;
+      const y = ev.clientY - offsetY;
+      const maxLeft = window.innerWidth - rect.width;
+      const maxTop = window.innerHeight - rect.height - 40;
+      win.style.left = Math.max(0, Math.min(x, maxLeft)) + "px";
+      win.style.top = Math.max(0, Math.min(y, maxTop)) + "px";
+      win.style.transform = "";
+    }
+
+    function onUp() {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.body.classList.remove("dragging");
+    }
+
+    document.body.classList.add("dragging");
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  });
+
+  // --- Minimizar ---
+  header.querySelector(".min-btn").addEventListener("click", () => {
+    win.style.display = "none";
+  });
+
+  // --- Maximizar / restaurar ---
+  header.querySelector(".max-btn").addEventListener("click", () => {
+    if (!maximized) {
+      prevRect = {
+        left: win.style.left,
+        top: win.style.top,
+        width: win.style.width,
+        height: win.style.height,
+      };
+      win.style.left = 0;
+      win.style.top = 0;
+      win.style.width = window.innerWidth + "px";
+      win.style.height = window.innerHeight - 40 + "px";
+      maximized = true;
+    } else {
+      Object.assign(win.style, prevRect);
+      maximized = false;
+    }
+  });
+
+  // --- Cerrar ---
+  header.querySelector(".close-btn").addEventListener("click", () => {
+    const tbBtn = document.querySelector('.task-btn[data-task="live-lab"]');
+    if (tbBtn) tbBtn.remove();
+    win.remove();
+  });
+}
+
+// ====== Tarjetas ======
+function populateCards() {
+  const container = document.getElementById("lab-cards");
+  portfolioCodes.forEach((item) => {
+    const card = document.createElement("div");
+    card.className = "lab-card";
+    card.innerHTML = `
+      <img src="${item.thumb}" alt="${item.title}" class="lab-thumb"/>
+      <span>${item.title}</span>
+      <small class="tag ${item.type}">${item.type.toUpperCase()}</small>
+    `;
+    card.onclick = () => handleCardClick(item);
+    container.appendChild(card);
+  });
+}
+
+// ====== HYDRA ======
+function setupHydraUI() {
+  const runBtn = document.getElementById("hydra-run");
+  const stopBtn = document.getElementById("hydra-stop");
+  const hideBtn = document.getElementById("hydra-hide");
+  const showBtn = document.getElementById("hydra-show");
+
+  runBtn.onclick = () => runHydraCode();
+  stopBtn.onclick = () => stopHydra();
+
+  hideBtn.onclick = () => {
+    document.getElementById("hydra-editor").classList.add("hidden");
+    showBtn.style.display = "inline-flex";
+  };
+  showBtn.onclick = () => {
+    document.getElementById("hydra-editor").classList.remove("hidden");
+    showBtn.style.display = "none";
+  };
+}
+
+function runHydraCode() {
+  const code = document.getElementById("hydra-code").value;
+  const canvas = document.getElementById("hydra-canvas");
+  if (!hydra)
+    hydra = new window.Hydra({ canvas, detectAudio: false, makeGlobal: true });
+  new Function(code)();
+}
+
+function stopHydra() {
   try {
-    console.log("▶ Ejecutando Strudel...");
-    new Function(code)(); // usa las funciones globales s(), n(), setcps(), etc.
-    log.textContent = "🎵 Strudel ejecutado correctamente";
-  } catch (e) {
-    log.textContent = "❌ Strudel error: " + e.message;
-    console.error("❌ Strudel error:", e);
+    hydra?.synth?.stop();
+  } catch {}
+}
+
+// ====== STRUDEL / HYDRA HANDLER ======
+function handleCardClick(item) {
+  const iframe = document.getElementById("strudel-frame");
+  const hydraContainer = document.getElementById("hydra-container");
+
+  if (item.type === "strudel") {
+    hydraContainer.style.display = "none";
+    iframe.style.display = "block";
+    iframe.src = item.url;
+    showAudioUnlock();
+  }
+  if (item.type === "hydra") {
+    iframe.style.display = "none";
+    hydraContainer.style.display = "block";
+    document.getElementById("hydra-code").value = item.code.trim();
+    runHydraCode();
   }
 }
 
-// ====== Stop ======
-function stopAll() {
-  try {
-    if (hydra?.synth) hydra.synth.stop();
-  } catch {}
-  try {
-    if (window.hush) window.hush(); // función global de Strudel para silenciar
-  } catch {}
-  console.log("🛑 Todo detenido");
+function showAudioUnlock() {
+  const overlay = document.getElementById("audio-unlock");
+  overlay.style.display = "flex";
+  overlay.style.position = "absolute";
+  overlay.style.inset = 0;
+  overlay.style.background = "rgba(0,0,0,0.7)";
+  overlay.style.color = "#fff";
+  overlay.style.alignItems = "center";
+  overlay.style.justifyContent = "center";
+  overlay.style.cursor = "pointer";
+  overlay.onclick = () => {
+    overlay.style.display = "none";
+  };
 }
 
 // ====== Export principal ======
 export async function openLiveLabWindow() {
   if (document.getElementById("live-lab")) return;
+  await ensureHydra();
   createUI();
-  await ensureLibs();
-
-  // 🔊 Auto-init de Strudel al abrir
-  if (typeof window.initStrudel === "function" && !window.__strudelReady) {
-    console.log("🎚 Inicializando Strudel global al abrir ventana...");
-    await window.initStrudel();
-    window.__strudelReady = true;
-  }
-
-  console.log("✅ Live Lab listo.");
+  console.log("✅ Live Lab listo (icono 📁 + barra gris OS).");
 }
