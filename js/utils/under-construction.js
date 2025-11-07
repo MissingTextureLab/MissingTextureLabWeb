@@ -38,7 +38,7 @@ export function initUnderConstruction() {
   let model;
 
   loader.load(
-    '../models/gear.glb', // 🧩 cambia la ruta a tu modelo real
+    'models/gear.glb', // 🧩 cambia la ruta a tu modelo real
     (gltf) => {
       model = gltf.scene;
       scene.add(model);
