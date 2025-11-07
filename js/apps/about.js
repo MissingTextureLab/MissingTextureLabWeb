@@ -19,9 +19,15 @@ export function initAbout3D() {
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(container.offsetWidth, container.offsetHeight); // 🔹 igual que under_construction.js
+  renderer.domElement.style.position = 'absolute';
+  renderer.domElement.style.inset = 0; // 🔹 garantiza que cubre todo el contenedor
+  renderer.domElement.style.width = '100%';
+  renderer.domElement.style.height = '100%';
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.3; // 🔆 un poco más de brillo
+  renderer.toneMappingExposure = 1.3;
+  container.appendChild(renderer.domElement);
 
   // === ILUMINACIÓN ===
   const ambient = new THREE.AmbientLight(0xffffff, 0.6);
@@ -188,15 +194,84 @@ export function initAbout3D() {
 
   // === RESPONSIVE ===
   function resize() {
-    const w = container.clientWidth;
-    const h = container.clientHeight;
+    const w = container.offsetWidth;
+    const h = container.offsetHeight;
+
+    // 🔹 Ajuste real del renderer
     renderer.setSize(w, h, false);
+    renderer.domElement.style.width = `${w}px`;
+    renderer.domElement.style.height = `${h}px`;
+
+    // 🔹 Ajuste cámara
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+
+    // 🔹 Ajuste Hydra overlay
     hydra.setResolution(w, h);
+
+    // 🔹 Reescalar objetos
     objs.forEach(o => o && scaleToFit(o));
   }
-  new ResizeObserver(resize).observe(container);
-  window.addEventListener("resize", resize);
+  window.addEventListener('resize', resize);
   resize();
+  // === PANEL DESPLEGABLE FIJO CON EMOJI ===
+  const aboutText = document.getElementById("about-text");
+  if (aboutText) {
+    // 🔹 Crear botón fuera del panel (en el contenedor)
+    const toggleBtn = document.createElement("button");
+    toggleBtn.id = "about-toggle";
+    toggleBtn.textContent = "💬"; // emoji inicial
+    container.appendChild(toggleBtn);
+
+    // 🔹 Estilos básicos
+    Object.assign(toggleBtn.style, {
+      position: "absolute",
+      top: "12px",
+      left: "12px",
+      zIndex: 50,
+      background: "rgba(0,0,0,0.4)",
+      color: "white",
+      border: "1px solid rgba(255,255,255,0.2)",
+      borderRadius: "8px",
+      width: "36px",
+      height: "36px",
+      cursor: "pointer",
+      fontSize: "1.2rem",
+      lineHeight: "1.2",
+      backdropFilter: "blur(4px)",
+      transition: "all 0.3s ease",
+    });
+
+    toggleBtn.addEventListener("mouseenter", () => {
+      toggleBtn.style.background = "rgba(255,255,255,0.1)";
+    });
+    toggleBtn.addEventListener("mouseleave", () => {
+      toggleBtn.style.background = "rgba(0,0,0,0.4)";
+    });
+
+    // 🔹 Estado y comportamiento
+    let isCollapsed = false;
+
+    toggleBtn.addEventListener("click", () => {
+      isCollapsed = !isCollapsed;
+
+      if (isCollapsed) {
+        aboutText.style.transform = "translateX(-100%)";
+        aboutText.style.opacity = "0";
+        toggleBtn.textContent = "📄"; // emoji cuando el panel está oculto
+        toggleBtn.style.left = "12px";
+        toggleBtn.style.background = "rgba(0,0,0,0.7)";
+      } else {
+        aboutText.style.transform = "translateX(0)";
+        aboutText.style.opacity = "1";
+        toggleBtn.textContent = "💬"; // emoji cuando está desplegado
+        toggleBtn.style.background = "rgba(0,0,0,0.4)";
+      }
+    });
+
+    // 🔹 Transiciones suaves
+    aboutText.style.transition =
+      "transform 0.6s cubic-bezier(.25,.8,.25,1), opacity 0.5s ease";
+  }
+
 }

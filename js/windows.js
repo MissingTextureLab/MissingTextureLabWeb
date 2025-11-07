@@ -212,3 +212,22 @@ export function openProperties(folder) {
 
 }
 
+// En tu windows.js o donde generes ventanas:
+function openUnderConstructionWindow() {
+  const win = document.createElement('div');
+  win.className = 'window window-under-construction';
+  win.innerHTML = `
+    <div class="window-header">
+      <span>En construcción 🚧</span>
+      <div class="window-buttons">
+        <span class="close-btn">✕</span>
+      </div>
+    </div>
+    <div class="window-content">
+      <div id="under-construction"></div>
+      <div class="uc-text">🚧 Página en construcción — próximamente disponible 🚀</div>
+    </div>
+  `;
+  document.body.appendChild(win);
+  import('./under_construction.js').then(m => m.initUnderConstruction());
+}

@@ -444,7 +444,7 @@ body::before{
 #screensaver-logo {
   position: relative;
   width: 300px;           /* 🔹 más pequeño */
-  opacity: 0.35;           /* 🔹 semitransparente */
+  opacity: 0.10;           /* 🔹 semitransparente */
   transition:
     opacity 0.9s ease-in-out,     /* 🔹 transición más lenta y fluida */
     transform 0.4s ease;
@@ -456,6 +456,27 @@ body::before{
   transform: scale(1);
   transition: transform 0.35s ease;
 }
+
+#screensaver-logo::before {
+  content: '';
+  position: absolute;
+  inset: -60px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(160, 160, 255, 0.08) 0%,
+    rgba(80, 80, 160, 0.05) 40%,
+    transparent 80%
+  );
+  opacity: 0.7;
+  transition: opacity 1s ease;
+  z-index: -1; /* detrás del logo */
+}
+
+#screensaver-logo:hover::before {
+  opacity: 1;
+}
+
 #screensaver-logo:hover {
   opacity: 1;
   transform: scale(1.05);
@@ -483,7 +504,18 @@ body::before{
   animation: flashOut 0.25s ease;
 }
 
-
+#three-bg, #three-fg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+#three-fg {
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.5;
+}
 /*
 
 #screensaver{
@@ -863,7 +895,7 @@ body.dragging .icon {
 .file-grid{ gap: 16px; }
 
 
-/* 3D about*/
+/* === ABOUT 3D WINDOW === */
 .window-about3d {
   background: #000;
   overflow: hidden;
@@ -878,62 +910,86 @@ body.dragging .icon {
   overflow: hidden;
 }
 
+/* === LAYOUT: texto IZQUIERDA + canvas DERECHA === */
 .about-layout {
   position: relative;
   width: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: row; /* ← texto primero, canvas después */
   overflow: hidden;
 }
 
-#about-canvas {
+/* === PANEL DE TEXTO IZQUIERDO === */
+#about-text {
   position: absolute;
-  inset: 0;
-  width: 100%;
+  top: 0;
+  left: 0;
+  width: 30%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* ✅ el contenido arranca arriba */
+  align-items: flex-start;
+  padding: 4vw 2.5vw;
+  color: #e6e6e6;
+  font-family: "IBM Plex Sans", "Cascadia Code", monospace;
+  background: rgba(8, 8, 8, 0.55);
+  backdrop-filter: blur(16px) brightness(1.05);
+  border-right: 1px solid rgba(138,191,255,0.15);
+  box-shadow: 8px 0 20px rgba(0,0,0,0.4);
+  z-index: 20;
+  transition: transform 0.6s cubic-bezier(.25,.8,.25,1), opacity 0.5s ease;
+
+  overflow-y: auto;       /* ✅ scroll vertical visible */
+  overflow-x: hidden;     /* 🚫 sin scroll horizontal */
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 85, 247, 0.25) transparent;
+}
+
+/* === CANVAS 3D DERECHA === */
+#about-canvas {
+  order: 1;
+  flex: 1;
+  width: 70%;
   height: 100%;
   display: block;
 }
 
-#about-text {
-  position: absolute;
-  inset: 0;
-  overflow-y: scroll;
-  padding: 60px 40px;
-  color: white;
-  font-family: "Cascadia Code", monospace;
-  z-index: 10;
-  background: rgba(0,0,0,0.2);
-  backdrop-filter: blur(0px);
-}
-
+/* === SECCIONES === */
 #about-text section {
-  margin-bottom: 80px;
-  max-width: 600px;
+  margin-bottom: 3vh;
+  max-width: 95%;
+  word-wrap: break-word;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+#about-text section:last-child {
+  margin-bottom: 0;
 }
 
-/* === TÍTULOS SOBRE MÍ — NEÓN ROTO CONTINUO === */
+/* === TÍTULOS NEÓN === */
 #about-text h2 {
-  font-size: 1.5rem;
-  margin-bottom: 0.6rem;
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  margin-bottom: 0.4rem;
   color: var(--frutiger-cyan);
-  letter-spacing: 0.6px;
-  cursor: default;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
   text-shadow:
     0 0 8px rgba(14,165,233,0.4),
     0 0 16px rgba(168,85,247,0.25);
-  transition: color 0.3s ease, text-shadow 0.3s ease;
-  animation: neonFlicker 6s infinite ease-in-out;
-  animation-delay: calc(var(--delay, 0s));
 }
 
-/* ✨ Hover mantiene la reactividad */
 #about-text h2:hover {
   color: var(--frutiger-light);
   text-shadow:
-    0 0 14px rgba(168,85,247,0.7),
+    0 0 12px rgba(168,85,247,0.6),
     0 0 26px rgba(6,182,212,0.5);
 }
 
-/* ⚡ Parpadeo de tubo de neón permanente */
+/* ⚡ Parpadeo tubo neón */
 @keyframes neonFlicker {
   0%, 80%, 100% {
     opacity: 1;
@@ -948,29 +1004,180 @@ body.dragging .icon {
   85% { opacity: 1; filter: brightness(1.1); }
 }
 
-/* 🎲 Cada título tiene su propio ritmo */
+/* Ritmos distintos */
 #about-text section:nth-of-type(1) h2 { --delay: 0s; }
-#about-text section:nth-of-type(2) h2 { --delay: 20s; }
-#about-text section:nth-of-type(3) h2 { --delay: 10s; }
-#about-text section:nth-of-type(4) h2 { --delay: 30s; }
-#about-text section:nth-of-type(5) h2 { --delay: 30s; }
+#about-text section:nth-of-type(2) h2 { --delay: 10s; }
+#about-text section:nth-of-type(3) h2 { --delay: 20s; }
+#about-text section:nth-of-type(4) h2 { --delay: 25s; }
 
-/* 💬 Texto descriptivo */
-#about-text p {
-  font-size: 1rem;
-  color: rgba(255,255,255,0.85);
-  line-height: 1.7;
-  margin-bottom: 1.2rem;
-  transition: color 0.3s ease;
+#about-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 30%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 4vw 2.5vw;
+  color: #e6e6e6;
+  font-family: "IBM Plex Sans", "Cascadia Code", monospace;
+  background: rgba(8, 8, 8, 0.55);
+  backdrop-filter: blur(16px) brightness(1.05);
+  border-right: 1px solid rgba(138,191,255,0.15);
+  box-shadow: 8px 0 20px rgba(0,0,0,0.4);
+  z-index: 20;
+  transition: transform 0.6s cubic-bezier(.25,.8,.25,1), opacity 0.5s ease;
+
+  overflow-y: auto;       /* ✅ scroll vertical visible */
+  overflow-x: hidden;     /* 🚫 sin scroll horizontal */
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 85, 247, 0.25) transparent;
 }
-#about-text p:hover { color: rgba(255,255,255,1); }
 
-/* ✨ Scrollbar sutil */
-#about-text::-webkit-scrollbar { width: 6px; }
+/* === SCROLLBAR PERSONALIZADA === */
+#about-text::-webkit-scrollbar {
+  width: 6px;
+}
 #about-text::-webkit-scrollbar-thumb {
-  background: rgba(168, 85, 247, 0.3);
+  background: rgba(168, 85, 247, 0.25);
   border-radius: 4px;
 }
 #about-text::-webkit-scrollbar-thumb:hover {
   background: rgba(14, 165, 233, 0.5);
+}
+
+/* === TEXTO FLEXIBLE Y FLUIDO === */
+#about-text section {
+  margin-bottom: 3vh;
+  max-width: 95%;
+  word-wrap: break-word;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+#about-text h2 {
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  margin-bottom: 0.4rem;
+  color: var(--frutiger-cyan);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 8px rgba(14,165,233,0.4),
+    0 0 16px rgba(168,85,247,0.25);
+}
+
+#about-text p {
+  font-size: clamp(0.8rem, 1.2vw, 1rem);
+  line-height: 1.5;
+  color: rgba(255,255,255,0.85);
+  margin: 0.2rem 0;
+}
+
+/* === OPTIMIZADO PARA ALTURAS PEQUEÑAS === */
+@media (max-height: 700px) {
+  #about-text {
+    padding: 2vw 2vw;
+  }
+  #about-text h2 {
+    font-size: clamp(0.9rem, 1.8vw, 1.1rem);
+  }
+  #about-text p {
+    font-size: clamp(0.75rem, 1vw, 0.9rem);
+    line-height: 1.3;
+  }
+}
+
+/* === RESPONSIVE MÓVIL === */
+@media (max-width: 900px) {
+  #about-text {
+    position: relative;
+    width: 100%;
+    height: auto;
+    flex: 1;
+    border-right: none;
+    border-bottom: 1px solid rgba(138,191,255,0.15);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    padding: 8vw 5vw;
+
+    overflow-y: visible; /* en móvil no hace falta scroll */
+  }
+}
+
+
+
+
+/* === VENTANA "EN CONSTRUCCIÓN" === */
+.window-under-construction {
+  background: rgba(10, 10, 20, 0.95);
+  color: var(--frutiger-white);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 40px var(--frutiger-shadow);
+}
+
+/* contenido interno */
+.window-under-construction .window-content {
+  position: relative;
+  flex: 1;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* Canvas ocupa todo el espacio */
+#under-construction {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(10,10,20,1) 0%, rgba(0,0,0,1) 100%);
+}
+#under-construction, 
+#under-construction canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: #000;
+}
+
+/* Texto flotante con estilo OS */
+.uc-text {
+  position: absolute;
+  bottom: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  text-align: center;
+  font-family: "Cascadia Code", monospace;
+  font-size: clamp(0.9rem, 2vw, 1.2rem);
+  color: rgba(255,255,255,0.9);
+  text-shadow:
+    0 0 6px rgba(14,165,233,0.6),
+    0 0 12px rgba(168,85,247,0.4);
+  letter-spacing: 0.5px;
+  animation: ucFadeIn 1.2s ease forwards, ucPulse 4s ease-in-out infinite;
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid rgba(168,85,247,0.3);
+  box-shadow: 0 0 20px rgba(168,85,247,0.2);
+}
+
+@keyframes ucFadeIn {
+  from { opacity: 0; transform: translate(-50%, 20px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes ucPulse {
+  0%, 100% { text-shadow: 0 0 6px rgba(14,165,233,0.5), 0 0 12px rgba(168,85,247,0.4); }
+  50% { text-shadow: 0 0 12px rgba(14,165,233,0.9), 0 0 20px rgba(168,85,247,0.7); }
 }

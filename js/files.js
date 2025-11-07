@@ -1103,11 +1103,16 @@ function openFolder(name) {
   content.className = 'window-content';
 
   if (!files.length) {
+    // === Carpeta vacía → mostrar engine 3D “en construcción” ===
     content.innerHTML = `
-      <h3>📁 ${name}</h3>
-      <p style="margin-top:12px;opacity:.8">
-        Esta carpeta está vacía. Añade archivos en <code>filesByFolder["${name}"]</code>.
-      </p>`;
+      <div class="under-construction-wrap">
+        <div id="under-construction"></div>
+        <div class="uc-text">🚧 Esta sección está en construcción 🚧</div>
+      </div>
+    `;
+
+    // Cargar el motor 3D flotante
+    import('./utils/under-construction.js').then(m => m.initUnderConstruction());
   } else {
     const sectionsWrap = document.createElement('div');
     sectionsWrap.className = 'category-sections-wrap';
