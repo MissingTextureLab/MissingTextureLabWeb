@@ -37,33 +37,33 @@ export function initUnderConstruction() {
   const loader = new GLTFLoader();
   let model;
 
+// Ruta base dinámica (funciona local + GitHub Pages)
+const basePath = window.location.hostname.includes('github.io')
+  ? `${window.location.origin}/MissingTextureLabWeb/models/`
+  : './models/';
+
   loader.load(
-    './models/gear.glb', // 🧩 cambia la ruta a tu modelo real
+    `${basePath}gear.glb`,
     (gltf) => {
       model = gltf.scene;
       scene.add(model);
 
-      // Centrar modelo y escalar automáticamente
       const box = new THREE.Box3().setFromObject(model);
       const size = new THREE.Vector3();
       box.getSize(size);
       const center = new THREE.Vector3();
       box.getCenter(center);
+      model.position.sub(center);
 
-      model.position.sub(center); // centramos el modelo en (0,0,0)
-
-      // Escalado automático para que siempre entre en cámara
       const maxDim = Math.max(size.x, size.y, size.z);
-      const desiredSize = 2.5; // tamaño relativo en pantalla
+      const desiredSize = 2.5;
       const scale = desiredSize / maxDim;
       model.scale.setScalar(scale);
-
       console.log(`✅ Modelo cargado y centrado. Escala aplicada: ${scale.toFixed(3)}`);
     },
     undefined,
     (err) => console.error('❌ Error al cargar el modelo GLB:', err)
   );
-
     // === ANIMACIÓN ===
     let t = 0;
     function animate() {
