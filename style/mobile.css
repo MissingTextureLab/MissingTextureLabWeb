@@ -1,40 +1,119 @@
-body.mobile-mode, body.mobile-mode #desktop {
+/* ================================
+   📱 MOBILE MODE STYLES — versión estable sin salto
+   ================================ */
+
+/* 🔹 Normalización general */
+body.mobile-mode {
   width: 100vw !important;
-  height: 100vh !important;
+  height: var(--real-vh) !important; /* ✅ usa la altura real medida por JS */
   overflow: hidden !important;
   margin: 0;
   padding: 0;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
+/* 🔹 Desktop principal con scroll */
+body.mobile-mode #desktop {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto; /* scroll vertical controlado */
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: flex-start;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  padding-bottom: calc(var(--taskbar-h, 48px) + env(safe-area-inset-bottom, 0)); /* deja hueco real */
+  background-attachment: fixed; /* evita el salto visual al final */
+}
+
+/* 🔹 Ocultar ventanas auxiliares */
 body.mobile-mode .window-assistant {
   display: none !important;
 }
 
+/* 🔹 Ventanas adaptadas */
 body.mobile-mode .window {
   max-width: 100vw;
-  max-height: 100vh;
+  max-height: calc(100vh - var(--taskbar-h, 48px));
   border-radius: 8px;
-}
-
-body.mobile-mode #taskbar {
-  display: flex !important;
-  position: fixed !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  width: 100vw !important;
-  height: var(--taskbar-h, 48px) !important;
-  z-index: 10000 !important;
-}
-
-body.mobile #desktop {
-  position: relative;
   overflow: hidden;
-  height: 100vh;
-  touch-action: none;
+  box-sizing: border-box;
+  backdrop-filter: blur(8px);
+
+  /* ✅ comportamiento tipo “app view” */
+  width: 100% !important;
+  left: 0 !important;
+  top: 0 !important;
+  transform: none !important;
 }
 
-body.mobile .icon img {
+/* 🔹 Taskbar fija inferior estable (oculta en móvil) */
+body.mobile-mode #taskbar {
+  display: none !important; /* ✅ oculta totalmente en móviles */
+}
+
+/* 🔹 Botones de ventana — solo muestra ✕ */
+body.mobile-mode .window .window-buttons {
+  display: flex !important;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+body.mobile-mode .window .window-buttons .min-btn,
+body.mobile-mode .window .window-buttons .max-btn {
+  display: none !important; /* 🚫 oculta minimizar y maximizar */
+}
+
+body.mobile-mode .window .window-buttons .close-btn {
+  display: inline-flex !important; /* ✅ deja solo cerrar */
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  padding: 0 0.4rem;
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
+}
+
+body.mobile-mode .window .window-buttons .close-btn:hover {
+  opacity: 1;
+}
+
+/* 🔹 Centra el título de la ventana */
+body.mobile-mode .window .window-header {
+  justify-content: space-between !important;
+  align-items: center;
+  text-align: center !important;
+  padding: 0.25rem 0.75rem;
+}
+
+/* 🔹 Iconos adaptativos */
+body.mobile-mode .icon img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  border-radius: 12px;
+  transition: transform 0.15s ease, opacity 0.2s ease;
+}
+
+body.mobile-mode .icon:active img {
+  transform: scale(0.92);
+  opacity: 0.85;
+}
+
+/* 🔹 Grid adaptable */
+@media (max-width: 600px) {
+  body.mobile-mode #desktop {
+    gap: 1rem;
+    padding: 1rem;
+    padding-bottom: 1rem; /* ya no hay taskbar visible */
+  }
 }
