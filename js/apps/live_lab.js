@@ -5,6 +5,7 @@
 import { bringToFront, addToTaskbar } from "../windows.js";
 
 let hydra;
+let portfolioCodes = []; // 🔹 ahora se cargan dinámicamente desde JSON
 
 // ==========================================================
 // 🔧 Utilidades
@@ -37,24 +38,19 @@ async function ensureHydra() {
 }
 
 // ==========================================================
-// 🎴 Tarjetas de laboratorio
+// 🎴 Cargar tarjetas desde JSON
 // ==========================================================
-const portfolioCodes = [
-  {
-    title: "🌊 Oceanic Pulse",
-    type: "strudel",
-    thumb: "icons/wave.png",
-    url: "https://strudel.cc/#Ly8gZmlsbCBpbiBnYXBzIGJldHdlZW4gZXZlbnRzCg...",
-  },
-  {
-    title: "🌈 Hydra Patch",
-    type: "hydra",
-    thumb: "icons/hydra.png",
-    code: `
-osc(10,0.1,1.2).modulate(noise(2)).kaleid(3).out(o0)
-`,
-  },
-];
+async function loadPortfolioCodes() {
+  try {
+    const res = await fetch("../data/live-lab.json");
+    if (!res.ok) throw new Error(`Error al cargar JSON (${res.status})`);
+    portfolioCodes = await res.json();
+    console.log("📦 Tarjetas cargadas:", portfolioCodes);
+    populateCards();
+  } catch (err) {
+    console.error("⚠️ No se pudieron cargar las tarjetas:", err);
+  }
+}
 
 // ==========================================================
 // 🧠 Lógica principal de selección
@@ -66,13 +62,15 @@ function handleCardClick(item) {
 
   try { hydra?.synth?.stop(); } catch {}
   if (overlay) overlay.style.display = "none";
+
   const panel = document.getElementById("lab-left");
   const toggle = document.getElementById("lab-folder-toggle");
   if (document.body.classList.contains("mobile-mode") && panel && toggle) {
-  panel.classList.remove("open");
-  toggle.classList.remove("active");
-  toggle.textContent = "📂";
-}
+    panel.classList.remove("open");
+    toggle.classList.remove("active");
+    toggle.textContent = "📂";
+  }
+
   // === STRUDEL ===
   if (item.type === "strudel") {
     toggleVisible(hydraContainer, false);
@@ -131,7 +129,7 @@ function handleCardClick(item) {
 // ==========================================================
 // 🪟 Crear ventana principal Live Lab
 // ==========================================================
-function createUI() {
+async function createUI() {
   const win = document.createElement("div");
   win.id = "live-lab";
   win.className = "window window-live-lab simple";
@@ -158,9 +156,7 @@ function createUI() {
 
       <div class="lab-main">
         <div id="strudel-wrapper" class="strudel-zone" style="opacity:0;visibility:hidden;">
-          <div id="strudel-mask">
-            <iframe id="strudel-frame" title="Strudel Live Coding Environment" allowfullscreen></iframe>
-          </div>
+          <div id="strudel-mask"></div>
         </div>
 
         <div id="hydra-container" style="opacity:0;visibility:hidden;">
@@ -186,6 +182,7 @@ function createUI() {
 
   document.body.appendChild(win);
 
+  // === Adaptación móvil ===
   if (isMobile) {
     Object.assign(win.style, {
       position: "fixed",
@@ -220,12 +217,14 @@ function createUI() {
 
   setupWindowControls(win, isMobile);
   setupPanelToggle();
-  populateCards();
   setupHydraUI();
+
+  await loadPortfolioCodes(); // 🔹 ahora se cargan desde JSON dinámico
 
   if (!isMobile) addToTaskbar("Live Lab", "🎛️");
   bringToFront(win);
-  handleCardClick(portfolioCodes[0]);
+
+  if (portfolioCodes.length > 0) handleCardClick(portfolioCodes[0]);
 }
 
 // ==========================================================
@@ -319,6 +318,9 @@ function setupWindowControls(win, isMobile) {
 // ==========================================================
 function populateCards() {
   const container = document.getElementById("lab-cards");
+  if (!container) return;
+  container.innerHTML = "";
+
   portfolioCodes.forEach((item) => {
     const card = document.createElement("div");
     card.className = "lab-card";
@@ -410,6 +412,6 @@ export async function openLiveLabWindow() {
     return;
   }
   await ensureHydra();
-  createUI();
-  console.log("✅ Live Lab creado (modo adaptativo y responsivo).");
+  await createUI();
+  console.log("✅ Live Lab creado (modo adaptativo y JSON dinámico).");
 }
