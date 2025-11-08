@@ -69,45 +69,15 @@ function handleCardClick(item) {
   const panel = document.getElementById("lab-left");
   const toggle = document.getElementById("lab-folder-toggle");
   if (document.body.classList.contains("mobile-mode") && panel && toggle) {
-    panel.classList.remove("open");
-    toggle.classList.remove("active");
-    toggle.textContent = "📂";
-  }
+  panel.classList.remove("open");
+  toggle.classList.remove("active");
+  toggle.textContent = "📂";
+}
   // === STRUDEL ===
   if (item.type === "strudel") {
-    // --- Oculta Hydra ---
-    const hydraContainer = document.getElementById("hydra-container");
     toggleVisible(hydraContainer, false);
+    toggleVisible(strudelWrapper, true);
 
-    // --- Muestra Strudel ---
-    const wrapper = document.getElementById("strudel-wrapper");
-    toggleVisible(wrapper, true);
-
-    // 🔊 Overlay audio desbloqueo
-    const overlay = document.getElementById("audio-unlock");
-    if (overlay) {
-      overlay.style.display = "flex";
-      overlay.onclick = () => (overlay.style.display = "none");
-    }
-
-    // --- Si es iPhone / iPad → abrir en nueva pestaña ---
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (isIOS) {
-      const confirmOpen = confirm(
-        "⚠️ En iPhone/iPad, Strudel se abrirá en una nueva pestaña para evitar limitaciones de Safari.\n¿Quieres continuar?"
-      );
-      if (confirmOpen) {
-        window.open(item.url, "_blank", "noopener,noreferrer");
-        return;
-      } else {
-        // Cancelado → restauramos Hydra
-        toggleVisible(wrapper, false);
-        toggleVisible(hydraContainer, true);
-        return;
-      }
-    }
-
-    // --- Caso normal (desktop / Android) ---
     const oldIframe = document.getElementById("strudel-frame");
     if (oldIframe) oldIframe.remove();
 
@@ -130,9 +100,10 @@ function handleCardClick(item) {
     const url = item.url + (item.url.includes("?") ? "&" : "?") + "_=" + Date.now();
     iframe.src = url;
 
+    overlay.style.display = "flex";
+    overlay.onclick = () => (overlay.style.display = "none");
     return;
   }
-
 
   // === HYDRA ===
   if (item.type === "hydra") {
