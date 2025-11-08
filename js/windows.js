@@ -212,7 +212,7 @@ export function openProperties(folder) {
 
 }
 
-// En tu windows.js o donde generes ventanas:
+
 function openUnderConstructionWindow() {
   const win = document.createElement('div');
   win.className = 'window window-under-construction';

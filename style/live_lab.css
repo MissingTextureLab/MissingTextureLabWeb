@@ -71,17 +71,36 @@
 }
 
 /* --- Columna izquierda (tarjetas) --- */
+/* --- Panel lateral (overlay deslizante) --- */
 .lab-left {
-  width: 220px;
-  min-width: 180px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: rgba(255,255,255,0.05);
-  border-right: 1px solid rgba(255,255,255,0.08);
+  position: fixed;
+  top: 48px;
+  left: 0;
+  width: 75%;
+  max-width: 280px;
+  height: calc(var(--real-vh) - 48px);
+  background: rgba(15,15,20,0.98);
+  border-right: 1px solid rgba(255,255,255,0.1);
+  transform: translateX(-100%);
+  transition: transform 0.35s ease;
+  z-index: 10020; /* 🔹 por encima del contenido principal */
+  padding: 16px;
   overflow-y: auto;
-  padding: 10px;
-  transition: width 0.3s ease;
+  overflow-x: hidden;
+  backdrop-filter: blur(10px);
+}
+.lab-left.open {
+  transform: translateX(0);
+}
+
+/* Añadimos un sombreado suave al abrir */
+.lab-left.open::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  z-index: -1;
 }
 
 /* Cuando el panel está cerrado */
@@ -149,11 +168,21 @@
 }
 
 /* --- Canvas Hydra --- */
-#hydra-canvas {
+#hydra-container {
+  position: relative;
   width: 100%;
   height: 100%;
-  background: #000;
+  overflow: hidden;
+}
+
+#hydra-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   display: block;
+  background: #000;
+  z-index: 0;
 }
 
 /* --- Editor Hydra --- */
@@ -165,17 +194,20 @@
   height: 35%;
   display: flex;
   flex-direction: column;
-  background: rgba(0,0,0,0.75);
+  background: rgba(0,0,0,0.6); /* 🔹 más transparencia */
   border-top: 1px solid rgba(255,255,255,0.1);
   backdrop-filter: blur(6px);
-  transition: opacity 0.3s ease, height 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;
   padding: 8px;
+  z-index: 10; /* por encima del canvas */
 }
+
 #hydra-editor.hidden {
   opacity: 0;
-  height: 0;
+  transform: translateY(100%);
   pointer-events: none;
 }
+
 #hydra-code {
   flex: 1;
   width: 100%;
@@ -258,31 +290,28 @@
 
 /* 📁 Botón de carpeta superior */
 #lab-folder-toggle {
-  position: absolute;
-  bottom: 10px;
-  left: 10px;
-  width: 38px;
-  height: 32px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 6px;
-  cursor: pointer;
-  color: var(--frutiger-white);
-  font-size: 20px;
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  width: 42px;
+  height: 42px;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 10px;
+  color: white;
+  font-size: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 200;
-  transition: all 0.25s ease;
+  z-index: 10025;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(6px);
-  text-shadow: 0 0 6px rgba(168,85,247,0.6);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transition: transform 0.25s ease, background 0.25s ease;
 }
-
 #lab-folder-toggle:hover {
-  background: rgba(168, 85, 247, 0.3);
+  background: rgba(168, 85, 247, 0.35);
   transform: scale(1.08);
 }
-
 #lab-folder-toggle.active {
   background: rgba(168, 85, 247, 0.25);
   border-color: rgba(168, 85, 247, 0.4);
@@ -307,31 +336,37 @@
   transition: width 0.4s ease;
 }
 /* =========================================================
-   📱 Adaptación móvil — LIVE LAB
+   🧩 FIX: Header y estructura Live Lab móvil
    ========================================================= */
 @media (max-width: 800px) {
+
+  /* --- Ventana principal ocupa exactamente el viewport --- */
   .window-live-lab.simple {
     position: fixed;
     inset: 0;
-    width: 100vw;
+    width: 100vw !important;
+    max-width: 100vw !important;
     height: var(--real-vh);
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    overflow-x: hidden !important;
     border: none;
     border-radius: 0;
-    box-shadow: none;
     display: flex;
     flex-direction: column;
-    background: rgba(10,10,15,0.92); /* fondo coherente con el sistema */
+    background: rgba(10,10,15,0.92);
     backdrop-filter: blur(10px);
     z-index: 9999;
-    overflow: hidden;
   }
 
-  /* --- Header fijo superior --- */
+  /* --- Header 100% ancho, fijo y encima de todo --- */
   .lab-header {
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
+    width: 100vw !important;   /* 🔹 fuerza ancho completo */
+    max-width: 100vw !important;
     height: 48px;
     background: rgba(15,15,20,0.95);
     border-bottom: 1px solid rgba(255,255,255,0.1);
@@ -341,16 +376,17 @@
     padding: 0 12px;
     font-size: 14px;
     cursor: default;
-    z-index: 10001;
+    z-index: 10010;
+    box-sizing: border-box;    /* 🔹 asegura no sumar padding */
   }
 
-  /* Solo botón ✕ visible */
-  .lab-buttons .min-btn,
-  .lab-buttons .max-btn {
-    display: none !important;
+  /* --- Botones del header visibles correctamente --- */
+  .lab-header .lab-buttons {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
   }
-
-  .lab-buttons .close-btn {
+  .lab-header .close-btn {
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
@@ -358,139 +394,189 @@
     padding: 4px 10px;
     border-radius: 8px;
     background: rgba(255,255,255,0.1);
+    z-index: 10011 !important;
   }
-
-  .lab-buttons .close-btn:hover {
+  .lab-header .close-btn:hover {
     background: rgba(255,70,70,0.85);
   }
 
   /* --- Cuerpo general debajo del header --- */
   .lab-body {
-    flex: 1;
     position: absolute;
     top: 48px;
     left: 0;
     right: 0;
     bottom: 0;
+    flex: 1;
     display: flex;
     flex-direction: column;
+    width: 100vw;
+    max-width: 100vw;
     overflow: hidden;
   }
 
-  /* --- Panel lateral como overlay deslizable --- */
-  .lab-left {
-    position: fixed;
-    top: 48px;
-    left: 0;
-    width: 75%;
-    max-width: 280px;
-    height: calc(var(--real-vh) - 48px);
-    background: rgba(15,15,20,0.98);
-    border-right: 1px solid rgba(255,255,255,0.1);
-    transform: translateX(-100%);
-    transition: transform 0.35s ease;
-    z-index: 10002;
-    padding: 16px;
-    overflow-y: auto;
-    backdrop-filter: blur(10px);
-  }
-  .lab-left.open {
-    transform: translateX(0);
-  }
-
-  /* --- Botón 📁 para abrir/cerrar panel --- */
-  #lab-folder-toggle {
-    position: fixed;
-    top: 6px;
-    left: 8px;
-    width: 36px;
-    height: 36px;
-    background: rgba(0,0,0,0.55);
-    border-radius: 8px;
-    color: white;
-    font-size: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10003;
-    border: 1px solid rgba(255,255,255,0.15);
-  }
-
-  /* --- Área principal ocupa todo el espacio restante --- */
+  /* --- Panel lateral y main sin desbordar --- */
+  .lab-left,
   .lab-main {
-    flex: 1;
     width: 100%;
-    height: 100%;
-    border: none;
-    border-radius: 0;
-    overflow: hidden;
-    background: #000;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
-  /* --- Canvas y editor adaptados --- */
-  #hydra-canvas {
-    width: 100%;
-    height: 60vh;
-  }
-
-  #hydra-editor {
-    position: relative;
-    height: 40vh;
-    border-top: 1px solid rgba(255,255,255,0.15);
-    padding: 8px;
-    background: rgba(0,0,0,0.85);
-  }
-
-  #hydra-code {
-    font-size: 14px;
-    height: calc(100% - 42px);
-  }
-
-  .hydra-controls {
-    margin-top: 6px;
-    justify-content: space-between;
-  }
-
-  .hydra-controls button {
-    flex: 1;
-    margin: 0 4px;
-    padding: 8px;
-    font-size: 14px;
-  }
-
-  /* --- Overlay de audio --- */
-  #audio-unlock {
-    font-size: 16px;
-  }
-  body.mobile-mode #strudel-wrapper {
-    position: relative !important;
-    width: 100% !important;
-    height: calc(var(--real-vh) - 100px) !important;
-    max-height: calc(var(--real-vh) - 100px) !important;
-    overflow: hidden !important;
-    display: flex !important;
-    justify-content: center;
-    align-items: stretch;
-    background: rgba(0,0,0,0.85);
-    border-radius: 0 0 12px 12px;
-    clip-path: inset(0 round 12px);
-  }
-
-  body.mobile-mode #strudel-mask {
-    flex: 1;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    clip-path: inset(0);
-  }
-
-  body.mobile-mode #strudel-frame {
-    width: 100% !important;
-    height: 100% !important;
-    border: none !important;
-    overflow: hidden !important;
-    transform: translateY(-2%);
-    transform-origin: top center;
-  }
+/* === HYDRA en móvil — versión final === */
+#hydra-container {
+  position: relative !important;
+  width: 100vw !important;
+  height: calc(var(--real-vh, 100vh) - var(--taskbar-h, 48px)) !important;
+  background: #000;
+  overflow: hidden;
+  display: flex !important;
+  flex-direction: column;
+  justify-content: flex-end;
+  z-index: 1;
 }
 
+/* Canvas ocupa todo el fondo */
+#hydra-canvas {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  background: #000;
+  z-index: 0;
+}
+
+/* Editor flotante visible */
+#hydra-editor {
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  background: rgba(0, 0, 0, 0.8);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(8px);
+  padding: 12px 10px 60px; /* 🔹 espacio para botones visibles */
+  box-sizing: border-box;
+  display: flex !important;
+  flex-direction: column;
+  z-index: 10;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Oculto cuando se pulsa "Hide Editor" */
+#hydra-editor.hidden {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Textarea */
+#hydra-code {
+  flex: 1 1 auto;
+  background: #111;
+  color: #0f0;
+  border: 1px solid rgba(255,255,255,0.15);
+  padding: 10px;
+  font-family: "Cascadia Code", monospace;
+  font-size: 14px;
+  border-radius: 6px;
+  resize: none;
+  outline: none;
+  min-height: 140px;
+  margin-bottom: 12px;
+}
+
+/* Controles (RUN + HIDE) */
+.hydra-controls {
+  position: absolute;
+  bottom: 55px; /* 🔺 antes 12px — ahora se ven bien sobre el borde */
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  gap: 8px;
+  z-index: 12;
+  padding: 0 24px;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+.hydra-controls button {
+  flex: 1;
+  background: var(--frutiger-purple, #9b5de5);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.hydra-controls button:hover {
+  background: var(--frutiger-light, #c084fc);
+}
+
+/* Botón “Mostrar editor” flotante */
+#hydra-show {
+  position: absolute !important;
+  top: 10px;
+  right: 10px;
+  background: var(--frutiger-light, #c084fc);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  z-index: 20;
+  cursor: pointer;
+}
+#hydra-show:hover {
+  background: var(--frutiger-cyan, #67e8f9);
+}
+
+/* =========================================================
+   🧩 FIX: Interacción Strudel (iframe no bloqueante)
+   ========================================================= */
+
+/* Mantiene Strudel interactivo, pero sin bloquear los botones del OS */
+#strudel-mask iframe,
+#strudel-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  overflow: hidden;
+  transform: translateY(-2%);
+  pointer-events: auto;
+  z-index: 2; /* debajo de los controles y headers */
+}
+
+/* Permite clics en elementos de interfaz superpuestos */
+#live-lab .lab-header,
+#live-lab #lab-folder-toggle,
+#live-lab .lab-card,
+#live-lab #audio-unlock {
+  z-index: 5 !important;
+  pointer-events: auto !important;
+}
+
+/* El contenedor general acepta interacción global */
+#live-lab {
+  pointer-events: auto !important;
+  isolation: isolate;
+}
+
+/* Si el overlay audio está visible, bloquea solo esa capa */
+#audio-unlock {
+  pointer-events: auto !important;
+  z-index: 10 !important;
+}
+
+/* Mejora UX móvil: evita scroll bloqueado en iframes */
+body.mobile-mode iframe {
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+
+}

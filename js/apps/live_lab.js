@@ -6,7 +6,19 @@ import { bringToFront, addToTaskbar } from "../windows.js";
 
 let hydra;
 
-// ====== Loader ======
+// ==========================================================
+// 🔧 Utilidades
+// ==========================================================
+
+// Ocultar por opacidad para no perder contexto WebGL
+function toggleVisible(el, show) {
+  if (!el) return;
+  el.style.opacity = show ? "1" : "0";
+  el.style.visibility = show ? "visible" : "hidden";
+  el.style.pointerEvents = show ? "auto" : "none";
+}
+
+// Carga dinámica de scripts externos
 const lazyLoadScript = (src) =>
   new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) return resolve();
@@ -24,7 +36,9 @@ async function ensureHydra() {
   console.log("🎨 Hydra lista.");
 }
 
-// ====== Tarjetas ======
+// ==========================================================
+// 🎴 Tarjetas de laboratorio
+// ==========================================================
 const portfolioCodes = [
   {
     title: "🌊 Oceanic Pulse",
@@ -43,7 +57,108 @@ osc(10,0.1,1.2).modulate(noise(2)).kaleid(3).out(o0)
 ];
 
 // ==========================================================
-// UI principal
+// 🧠 Lógica principal de selección
+// ==========================================================
+function handleCardClick(item) {
+  const hydraContainer = document.getElementById("hydra-container");
+  const strudelWrapper = document.getElementById("strudel-wrapper");
+  const overlay = document.getElementById("audio-unlock");
+
+  try { hydra?.synth?.stop(); } catch {}
+  if (overlay) overlay.style.display = "none";
+  const panel = document.getElementById("lab-left");
+  const toggle = document.getElementById("lab-folder-toggle");
+  if (document.body.classList.contains("mobile-mode") && panel && toggle) {
+    panel.classList.remove("open");
+    toggle.classList.remove("active");
+    toggle.textContent = "📂";
+  }
+  // === STRUDEL ===
+  if (item.type === "strudel") {
+    // --- Oculta Hydra ---
+    const hydraContainer = document.getElementById("hydra-container");
+    toggleVisible(hydraContainer, false);
+
+    // --- Muestra Strudel ---
+    const wrapper = document.getElementById("strudel-wrapper");
+    toggleVisible(wrapper, true);
+
+    // 🔊 Overlay audio desbloqueo
+    const overlay = document.getElementById("audio-unlock");
+    if (overlay) {
+      overlay.style.display = "flex";
+      overlay.onclick = () => (overlay.style.display = "none");
+    }
+
+    // --- Si es iPhone / iPad → abrir en nueva pestaña ---
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+      const confirmOpen = confirm(
+        "⚠️ En iPhone/iPad, Strudel se abrirá en una nueva pestaña para evitar limitaciones de Safari.\n¿Quieres continuar?"
+      );
+      if (confirmOpen) {
+        window.open(item.url, "_blank", "noopener,noreferrer");
+        return;
+      } else {
+        // Cancelado → restauramos Hydra
+        toggleVisible(wrapper, false);
+        toggleVisible(hydraContainer, true);
+        return;
+      }
+    }
+
+    // --- Caso normal (desktop / Android) ---
+    const oldIframe = document.getElementById("strudel-frame");
+    if (oldIframe) oldIframe.remove();
+
+    const iframe = document.createElement("iframe");
+    iframe.id = "strudel-frame";
+    iframe.title = "Strudel Live Coding Environment";
+    iframe.allowFullscreen = true;
+    Object.assign(iframe.style, {
+      position: "absolute",
+      top: "0",
+      left: "0",
+      width: "100%",
+      height: "100%",
+      border: "0",
+      overflow: "hidden",
+      transform: "translateY(-2%)",
+    });
+    document.getElementById("strudel-mask").appendChild(iframe);
+
+    const url = item.url + (item.url.includes("?") ? "&" : "?") + "_=" + Date.now();
+    iframe.src = url;
+
+    return;
+  }
+
+
+  // === HYDRA ===
+  if (item.type === "hydra") {
+    toggleVisible(strudelWrapper, false);
+    toggleVisible(hydraContainer, true);
+
+    const code = (item.code || "").trim();
+    const codeArea = document.getElementById("hydra-code");
+    codeArea.value = code;
+
+    requestAnimationFrame(() => {
+      const canvas = document.getElementById("hydra-canvas");
+      if (!canvas) return;
+      const w = hydraContainer.clientWidth || window.innerWidth;
+      const h = hydraContainer.clientHeight || window.innerHeight;
+      canvas.width = w;
+      canvas.height = h;
+      canvas.style.display = "block";
+      canvas.style.visibility = "visible";
+      runHydraCode();
+    });
+  }
+}
+
+// ==========================================================
+// 🪟 Crear ventana principal Live Lab
 // ==========================================================
 function createUI() {
   const win = document.createElement("div");
@@ -51,12 +166,10 @@ function createUI() {
   win.className = "window window-live-lab simple";
   win.dataset.task = "live-lab";
 
-  // Detectar móvil
   const isMobile =
     document.body.classList.contains("mobile-mode") ||
     window.matchMedia("(max-width: 800px)").matches;
 
-  // HTML base
   win.innerHTML = `
     <div class="lab-header window-header">
       <span>🎛️ Live Lab</span>
@@ -72,51 +185,20 @@ function createUI() {
         <div class="lab-cards" id="lab-cards"></div>
       </div>
 
-    <div class="lab-main">
-      <div id="strudel-wrapper" style="
-        position: relative;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        display: none;
-        background: rgba(0,0,0,0.9);
-        border-radius: 0 0 12px 12px;
-        clip-path: inset(0 round 12px);
-      ">
-        <div id="strudel-mask" style="
-          position:absolute;
-          inset:0;
-          width:100%;
-          height:100%;
-          overflow:hidden;
-          clip-path: inset(0);
-        ">
-          <iframe
-            id="strudel-frame"
-            title="Strudel Live Coding Environment"
-            allowfullscreen
-            style="
-              position:absolute;
-              top:0;
-              left:0;
-              width:100%;
-              height:100%;
-              border:0;
-              overflow:hidden;
-              transform:translateY(-2%);
-            "
-          ></iframe>
+      <div class="lab-main">
+        <div id="strudel-wrapper" class="strudel-zone" style="opacity:0;visibility:hidden;">
+          <div id="strudel-mask">
+            <iframe id="strudel-frame" title="Strudel Live Coding Environment" allowfullscreen></iframe>
+          </div>
         </div>
-      </div>
 
-        <div id="hydra-container" style="display:none;position:relative;width:100%;height:100%;">
+        <div id="hydra-container" style="opacity:0;visibility:hidden;">
           <canvas id="hydra-canvas"></canvas>
           <div id="hydra-editor">
             <textarea id="hydra-code"></textarea>
             <div class="hydra-controls">
               <button id="hydra-run">▶ Run</button>
               <button id="hydra-hide">🌓 Hide Editor</button>
-              <button id="hydra-stop">■ Stop</button>
             </div>
           </div>
           <button id="hydra-show" title="Mostrar editor" style="display:none;">📝 Editor</button>
@@ -133,9 +215,6 @@ function createUI() {
 
   document.body.appendChild(win);
 
-  // ==========================================================
-  // Estilos adaptativos móviles (similar a “Sobre mí”)
-  // ==========================================================
   if (isMobile) {
     Object.assign(win.style, {
       position: "fixed",
@@ -155,56 +234,19 @@ function createUI() {
       opacity: "0",
       transform: "translateY(10px)",
     });
-
-    // Quitar minimizar/maximizar
     win.querySelector(".min-btn")?.remove();
     win.querySelector(".max-btn")?.remove();
-
-    const header = win.querySelector(".lab-header");
-    header.style.justifyContent = "space-between";
-    header.style.padding = "0.5rem 0.75rem";
-    header.style.cursor = "default";
-    header.style.background = "rgba(20,20,30,0.6)";
-    header.style.borderBottom = "1px solid rgba(255,255,255,0.08)";
-
-    const bodyEl = win.querySelector(".lab-body");
-    Object.assign(bodyEl.style, {
-      flex: "1",
-      position: "absolute",
-      top: "48px",
-      left: "0",
-      right: "0",
-      bottom: "0",
-      overflow: "hidden",
-      display: "flex",
-      flexDirection: "column",
-    });
-
-    const mainEl = win.querySelector(".lab-main");
-    Object.assign(mainEl.style, {
-      flex: "1",
-      width: "100%",
-      height: "100%",
-      borderRadius: "0",
-      overflow: "hidden",
-    });
-
-    const strudel = document.getElementById("strudel-wrapper");
-    const hydraCont = document.getElementById("hydra-container");
-    if (strudel && hydraCont) {
-      strudel.style.width = hydraCont.style.width = "100%";
-      strudel.style.height = hydraCont.style.height = "100%";
-    }
 
     requestAnimationFrame(() => {
       win.style.opacity = "1";
       win.style.transform = "translateY(0)";
     });
+
+    document.body.classList.add("mobile-mode");
+    win.style.maxWidth = "100vw";
+    win.style.overflowX = "hidden";
   }
 
-  // ==========================================================
-  // Inicialización funcional
-  // ==========================================================
   setupWindowControls(win, isMobile);
   setupPanelToggle();
   populateCards();
@@ -216,28 +258,22 @@ function createUI() {
 }
 
 // ==========================================================
-// Panel lateral (📁)
+// 📁 Panel lateral
 // ==========================================================
 function setupPanelToggle() {
   const panel = document.getElementById("lab-left");
   const toggle = document.getElementById("lab-folder-toggle");
-  const labBody = document.querySelector(".lab-body");
-  if (!panel || !toggle || !labBody) return;
-
-  panel.classList.add("open");
-  toggle.classList.add("active");
+  if (!panel || !toggle) return;
 
   toggle.addEventListener("click", () => {
     const isOpen = panel.classList.toggle("open");
     toggle.classList.toggle("active", isOpen);
     toggle.textContent = isOpen ? "📁" : "📂";
-    panel.style.width = isOpen ? "220px" : "0";
-    labBody.style.gridTemplateColumns = isOpen ? "220px 1fr" : "0 1fr";
   });
 }
 
 // ==========================================================
-// Controles de ventana
+// 🎛️ Controles de ventana (desktop)
 // ==========================================================
 function setupWindowControls(win, isMobile) {
   const header = win.querySelector(".lab-header");
@@ -250,6 +286,7 @@ function setupWindowControls(win, isMobile) {
     return;
   }
 
+  // arrastre
   header.addEventListener("mousedown", (e) => {
     if (e.target.closest(".lab-buttons")) return;
     e.preventDefault();
@@ -262,19 +299,15 @@ function setupWindowControls(win, isMobile) {
     function onMove(ev) {
       const x = ev.clientX - offsetX;
       const y = ev.clientY - offsetY;
-      const maxLeft = window.innerWidth - rect.width;
-      const maxTop = window.innerHeight - rect.height - 40;
-      win.style.left = Math.max(0, Math.min(x, maxLeft)) + "px";
-      win.style.top = Math.max(0, Math.min(y, maxTop)) + "px";
+      win.style.left = Math.max(0, x) + "px";
+      win.style.top = Math.max(0, y) + "px";
     }
 
     function onUp() {
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
-      document.body.classList.remove("dragging");
     }
 
-    document.body.classList.add("dragging");
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
   });
@@ -305,12 +338,13 @@ function setupWindowControls(win, isMobile) {
   header.querySelector(".close-btn").addEventListener("click", () => {
     const tbBtn = document.querySelector('.task-btn[data-task="live-lab"]');
     if (tbBtn) tbBtn.remove();
+    disposeLiveLab(win);
     win.remove();
   });
 }
 
 // ==========================================================
-// Tarjetas
+// 💾 Tarjetas
 // ==========================================================
 function populateCards() {
   const container = document.getElementById("lab-cards");
@@ -328,16 +362,14 @@ function populateCards() {
 }
 
 // ==========================================================
-// HYDRA
+// 🌈 HYDRA
 // ==========================================================
 function setupHydraUI() {
   const runBtn = document.getElementById("hydra-run");
-  const stopBtn = document.getElementById("hydra-stop");
   const hideBtn = document.getElementById("hydra-hide");
   const showBtn = document.getElementById("hydra-show");
 
   runBtn.onclick = () => runHydraCode();
-  stopBtn.onclick = () => stopHydra();
 
   hideBtn.onclick = () => {
     document.getElementById("hydra-editor").classList.add("hidden");
@@ -350,90 +382,63 @@ function setupHydraUI() {
 }
 
 function runHydraCode() {
-  const code = document.getElementById("hydra-code").value.trim();
   const canvas = document.getElementById("hydra-canvas");
-  const container = document.getElementById("hydra-container");
+  if (!canvas) return console.warn("⚠️ Canvas Hydra no encontrado");
+  const code = document.getElementById("hydra-code")?.value?.trim() || "";
 
-  if (!hydra) {
-    hydra = new window.Hydra({ canvas, detectAudio: false, makeGlobal: true });
-  }
+  canvas.style.display = "block";
+  canvas.style.visibility = "visible";
 
-  setTimeout(() => {
-    const wrapper = document.getElementById("strudel-wrapper");
-    const iframe = document.getElementById("strudel-frame");
-    if (wrapper && iframe) {
-      const rect = wrapper.getBoundingClientRect();
-      iframe.style.height = `${rect.height}px`;
+  try { hydra?.synth?.stop(); } catch {}
+  hydra = null;
+
+  requestAnimationFrame(() => {
+    try {
+      hydra = new window.Hydra({ canvas, detectAudio: false, makeGlobal: true });
+      const container = document.getElementById("hydra-container");
+      const resizeObserver = new ResizeObserver(() => {
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        if (hydra && hydra.setResolution) hydra.setResolution(w, h);
+      });
+      resizeObserver.observe(container);
+      new Function(code)();
+      console.log("🎨 Hydra inicializada correctamente.");
+    } catch (err) {
+      console.error("❌ Error al iniciar Hydra:", err);
     }
-  }, 120);
-
-  document.body.style.overflow = "hidden";
-  document.documentElement.style.overflow = "hidden";
-
-  try {
-    new Function(code)();
-  } catch (err) {
-    console.error("❌ Error al ejecutar código Hydra:", err);
-  }
-}
-
-function stopHydra() {
-  try {
-    hydra?.synth?.stop();
-  } catch {}
+  });
 }
 
 // ==========================================================
-// STRUDEL / HYDRA HANDLER
+// 🧹 Limpieza
 // ==========================================================
-function handleCardClick(item) {
-  const iframe = document.getElementById("strudel-frame");
-  const wrapper = document.getElementById("strudel-wrapper");
-  const hydraContainer = document.getElementById("hydra-container");
+function disposeLiveLab(win) {
+  try { hydra?.synth?.stop(); } catch {}
+  hydra = null;
+  delete window.hydra;
+  delete window.s0;
+  delete window.o0;
 
-  if (item.type === "strudel") {
-    hydraContainer.style.display = "none";
-    wrapper.style.display = "block";
-    iframe.src = item.url;
-    showAudioUnlock();
+  const iframe = win?.querySelector("#strudel-frame");
+  if (iframe) iframe.remove();
 
-    if (document.body.classList.contains("mobile-mode") || window.innerWidth < 800) {
-      wrapper.style.height = "calc(var(--real-vh) - 120px)";
-      iframe.style.height = "100%";
-      iframe.style.overflow = "hidden";
-      document.body.style.overflow = "hidden";
-    }
-  }
-
-  if (item.type === "hydra") {
-    wrapper.style.display = "none";
-    hydraContainer.style.display = "block";
-    document.getElementById("hydra-code").value = item.code.trim();
-    runHydraCode();
-  }
-}
-
-function showAudioUnlock() {
-  const overlay = document.getElementById("audio-unlock");
-  overlay.style.display = "flex";
-  overlay.style.position = "absolute";
-  overlay.style.inset = 0;
-  overlay.style.background = "rgba(0,0,0,0.7)";
-  overlay.style.color = "#fff";
-  overlay.style.alignItems = "center";
-  overlay.style.justifyContent = "center";
-  overlay.style.cursor = "pointer";
-  overlay.onclick = () => {
-    overlay.style.display = "none";
-  };
+  const overlay = win?.querySelector("#audio-unlock");
+  if (overlay) overlay.style.display = "none";
 }
 
 // ==========================================================
-// Export principal
+// 🚀 Export principal
 // ==========================================================
 export async function openLiveLabWindow() {
-  if (document.getElementById("live-lab")) return;
+  const existing = document.getElementById("live-lab");
+  if (existing) {
+    console.log("♻️ Reutilizando Live Lab existente");
+    existing.style.display = "";
+    bringToFront(existing);
+    return;
+  }
   await ensureHydra();
   createUI();
-  console.log("✅ Live Lab listo (modo adaptativo y responsivo).");
+  console.log("✅ Live Lab creado (modo adaptativo y responsivo).");
 }
