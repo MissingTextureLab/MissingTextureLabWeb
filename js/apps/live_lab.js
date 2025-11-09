@@ -1,17 +1,15 @@
 // ==========================================================
-// 🎛️ live_lab.js — Hydra + Strudel (ventana OS adaptada a móvil y desktop)
+// 🎛️ live_lab_optimized.js — Hydra + Strudel embed con carga desde .js externos
 // ==========================================================
-
 import { bringToFront, addToTaskbar } from "../windows.js";
 
 let hydra;
-let portfolioCodes = []; // 🔹 ahora se cargan dinámicamente desde JSON
+let portfolioCodes = [];
+let strudelEmbedLoaded = false;
 
 // ==========================================================
-// 🔧 Utilidades
+// 🔧 Utilidades generales
 // ==========================================================
-
-// Ocultar por opacidad para no perder contexto WebGL
 function toggleVisible(el, show) {
   if (!el) return;
   el.style.opacity = show ? "1" : "0";
@@ -19,7 +17,6 @@ function toggleVisible(el, show) {
   el.style.pointerEvents = show ? "auto" : "none";
 }
 
-// Carga dinámica de scripts externos
 const lazyLoadScript = (src) =>
   new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) return resolve();
@@ -33,8 +30,33 @@ const lazyLoadScript = (src) =>
 
 async function ensureHydra() {
   if (!window.Hydra)
-    await lazyLoadScript("https://unpkg.com/hydra-synth@1.3.29/dist/hydra-synth.js");
+    await lazyLoadScript(
+      "https://unpkg.com/hydra-synth@1.3.29/dist/hydra-synth.js"
+    );
   console.log("🎨 Hydra lista.");
+}
+
+// ==========================================================
+// 💾 Utilidad: obtener código desde item.code o item.path
+// ==========================================================
+async function getPatchCode(item) {
+  if (item.code) return item.code.trim();
+
+  if (item.path) {
+    try {
+      const res = await fetch(item.path);
+      if (!res.ok) throw new Error(`Error al cargar patch: ${item.path}`);
+      const text = await res.text();
+
+      const match = text.match(/export\s+default\s+`([\s\S]*)`;/);
+      if (match) return match[1].trim();
+      return text.trim();
+    } catch (err) {
+      console.error("⚠️ Error cargando patch externo:", err);
+      return "";
+    }
+  }
+  return "";
 }
 
 // ==========================================================
@@ -42,25 +64,47 @@ async function ensureHydra() {
 // ==========================================================
 async function loadPortfolioCodes() {
   try {
-    const res = await fetch("../data/live-lab.json");
+    const res = await fetch("../data/live-lab.json", { cache: "no-store" });
     if (!res.ok) throw new Error(`Error al cargar JSON (${res.status})`);
+
     portfolioCodes = await res.json();
-    console.log("📦 Tarjetas cargadas:", portfolioCodes);
     populateCards();
+    console.log("📦 Tarjetas cargadas:", portfolioCodes.length);
+
+    // 🔹 Cargar automáticamente el primer patch
+    if (portfolioCodes.length > 0) {
+      await handleCardClick(portfolioCodes[0]);
+      console.log(`🎬 Primer patch cargado automáticamente: ${portfolioCodes[0].title}`);
+    }
+
   } catch (err) {
     console.error("⚠️ No se pudieron cargar las tarjetas:", err);
   }
 }
 
 // ==========================================================
-// 🧠 Lógica principal de selección
+// 🧠 Lógica principal de selección de tarjeta
 // ==========================================================
-function handleCardClick(item) {
+async function handleCardClick(item) {
   const hydraContainer = document.getElementById("hydra-container");
   const strudelWrapper = document.getElementById("strudel-wrapper");
   const overlay = document.getElementById("audio-unlock");
 
-  try { hydra?.synth?.stop(); } catch {}
+  // 🔹 Apagar Hydra si estaba corriendo
+  if (hydra) {
+    try {
+      hydra.synth.stop();
+      hydra.resizeObserver?.disconnect?.();
+      hydra.canvas
+        ?.getContext("webgl")
+        ?.getExtension("WEBGL_lose_context")
+        ?.loseContext();
+    } catch (e) {
+      console.warn("Hydra stop warning:", e);
+    }
+    hydra = null;
+  }
+
   if (overlay) overlay.style.display = "none";
 
   const panel = document.getElementById("lab-left");
@@ -71,63 +115,242 @@ function handleCardClick(item) {
     toggle.textContent = "📂";
   }
 
-  // === STRUDEL ===
+  // === STRUDEL EMBED ===
   if (item.type === "strudel") {
     toggleVisible(hydraContainer, false);
     toggleVisible(strudelWrapper, true);
 
-    const oldIframe = document.getElementById("strudel-frame");
-    if (oldIframe) oldIframe.remove();
+    const mask = document.getElementById("strudel-mask");
 
-    const iframe = document.createElement("iframe");
-    iframe.id = "strudel-frame";
-    iframe.title = "Strudel Live Coding Environment";
-    iframe.allowFullscreen = true;
-    Object.assign(iframe.style, {
-      position: "absolute",
-      top: "0",
-      left: "0",
+    // 🔹 Limpieza total del Strudel anterior
+    try {
+      if (window.Tone?.Transport?.state !== "stopped") {
+        await window.Tone.Transport.stop();
+      }
+      if (window.Tone?.context) {
+        await window.Tone.context.close();
+        console.log("🎧 Contexto Tone cerrado.");
+      }
+    } catch (err) {
+      console.warn("⚠️ Error al limpiar Strudel anterior:", err);
+    }
+    mask.innerHTML = ""; // limpia cualquier <strudel-repl> previo
+
+    // 🔹 Fade in/out para transiciones suaves
+    mask.style.opacity = 0;
+    setTimeout(() => (mask.style.opacity = 1), 150);
+
+    // 🔹 Asegurar carga del embed
+    if (!strudelEmbedLoaded) {
+      await lazyLoadScript("https://unpkg.com/@strudel/embed@latest");
+      strudelEmbedLoaded = true;
+      console.log("🎶 @strudel/embed cargado.");
+    }
+
+    // 🔹 Crear nueva instancia Strudel
+    const code = await getPatchCode(item);
+    const repl = document.createElement("strudel-repl");
+    repl.setAttribute("code", code);
+    Object.assign(repl.style, {
       width: "100%",
       height: "100%",
-      border: "0",
-      overflow: "hidden",
-      transform: "translateY(-2%)",
+      display: "block",
+      background: "rgba(10,10,15,0.95)",
+      border: "none",
     });
-    document.getElementById("strudel-mask").appendChild(iframe);
+    mask.appendChild(repl);
 
-    const url = item.url + (item.url.includes("?") ? "&" : "?") + "_=" + Date.now();
-    iframe.src = url;
+    console.log(`🎵 Strudel embed cargado: ${item.title}`);
 
-    overlay.style.display = "flex";
-    overlay.onclick = () => (overlay.style.display = "none");
+    // 🎧 Autounlock de audio (Tone.js)
+    if (window.Tone && Tone.context?.state === "suspended") {
+      overlay.style.display = "flex";
+      overlay.onclick = () =>
+        Tone.context.resume().then(() => (overlay.style.display = "none"));
+    }
     return;
   }
+
 
   // === HYDRA ===
   if (item.type === "hydra") {
     toggleVisible(strudelWrapper, false);
     toggleVisible(hydraContainer, true);
 
-    const code = (item.code || "").trim();
+    const code = await getPatchCode(item);
     const codeArea = document.getElementById("hydra-code");
     codeArea.value = code;
 
     requestAnimationFrame(() => {
       const canvas = document.getElementById("hydra-canvas");
       if (!canvas) return;
-      const w = hydraContainer.clientWidth || window.innerWidth;
-      const h = hydraContainer.clientHeight || window.innerHeight;
-      canvas.width = w;
-      canvas.height = h;
-      canvas.style.display = "block";
-      canvas.style.visibility = "visible";
+      canvas.width = hydraContainer.clientWidth;
+      canvas.height = hydraContainer.clientHeight;
       runHydraCode();
     });
   }
 }
 
 // ==========================================================
-// 🪟 Crear ventana principal Live Lab
+// 💾 Tarjetas
+// ==========================================================
+function populateCards() {
+  const container = document.getElementById("lab-cards");
+  if (!container) return;
+  container.innerHTML = "";
+
+  portfolioCodes.forEach((item) => {
+    const card = document.createElement("div");
+    card.className = "lab-card";
+    card.innerHTML = `
+      <span class="lab-title">${item.title}</span>
+      <small class="tag ${item.type}">${item.type.toUpperCase()}</small>
+    `;
+    card.onclick = () => handleCardClick(item);
+    container.appendChild(card);
+  });
+}
+
+// ==========================================================
+// 📁 Panel lateral
+// ==========================================================
+function setupPanelToggle() {
+  const panel = document.getElementById("lab-left");
+  const toggle = document.getElementById("lab-folder-toggle");
+  if (!panel || !toggle) return;
+  toggle.addEventListener("click", () => {
+    const isOpen = panel.classList.toggle("open");
+    toggle.classList.toggle("active", isOpen);
+    toggle.textContent = isOpen ? "📁" : "📂";
+  });
+}
+
+// ==========================================================
+// 🌈 HYDRA (entorno completo optimizado)
+// ==========================================================
+function setupHydraUI() {
+  const runBtn = document.getElementById("hydra-run");
+  const hideBtn = document.getElementById("hydra-hide");
+  const showBtn = document.getElementById("hydra-show");
+
+  runBtn.onclick = () => runHydraCode();
+  hideBtn.onclick = () => {
+    document.getElementById("hydra-editor").classList.add("hidden");
+    showBtn.style.display = "inline-flex";
+  };
+  showBtn.onclick = () => {
+    document.getElementById("hydra-editor").classList.remove("hidden");
+    showBtn.style.display = "none";
+  };
+}
+
+function runHydraCode() {
+  const canvas = document.getElementById("hydra-canvas");
+  if (!canvas) return;
+  const code = document.getElementById("hydra-code")?.value?.trim() || "";
+
+  // 🔹 detener instancias previas
+  if (hydra) {
+    try {
+      hydra.synth.stop();
+      hydra.resizeObserver?.disconnect?.();
+      hydra.canvas
+        ?.getContext("webgl")
+        ?.getExtension("WEBGL_lose_context")
+        ?.loseContext();
+    } catch (e) {
+      console.warn("Hydra cleanup warning:", e);
+    }
+    hydra = null;
+  }
+
+  requestAnimationFrame(() => {
+    try {
+      hydra = new window.Hydra({
+        canvas,
+        detectAudio: true,
+        makeGlobal: true,
+      });
+      window._hydra = hydra;
+      console.log("🔍 Hydra global disponible en window._hydra");
+
+      const container = document.getElementById("hydra-container");
+      if (hydra.resizeObserver) hydra.resizeObserver.disconnect?.();
+      hydra.resizeObserver = new ResizeObserver(() => {
+        hydra.setResolution(container.clientWidth, container.clientHeight);
+      });
+      hydra.resizeObserver.observe(container);
+
+      new Function(code)();
+      console.log("🎨 Hydra ejecutado correctamente.");
+    } catch (err) {
+      console.error("❌ Error al iniciar Hydra:", err);
+    }
+  });
+}
+
+// ==========================================================
+// 🎛️ Controles de ventana
+// ==========================================================
+function setupWindowControls(win, isMobile) {
+  const header = win.querySelector(".lab-header");
+  let maximized = false;
+  let prevRect = null;
+
+  if (isMobile) {
+    header.querySelector(".close-btn")?.addEventListener("click", () => win.remove());
+    return;
+  }
+
+  header.addEventListener("mousedown", (e) => {
+    if (e.target.closest(".lab-buttons")) return;
+    e.preventDefault();
+    bringToFront(win);
+    const rect = win.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+    function onMove(ev) {
+      win.style.left = ev.clientX - offsetX + "px";
+      win.style.top = ev.clientY - offsetY + "px";
+    }
+    function onUp() {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    }
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  });
+
+  header.querySelector(".min-btn").onclick = () => (win.style.display = "none");
+  header.querySelector(".max-btn").onclick = () => {
+    if (!maximized) {
+      prevRect = {
+        left: win.style.left,
+        top: win.style.top,
+        width: win.style.width,
+        height: win.style.height,
+      };
+      Object.assign(win.style, {
+        left: 0,
+        top: 0,
+        width: window.innerWidth + "px",
+        height: window.innerHeight - 40 + "px",
+      });
+      maximized = true;
+    } else {
+      Object.assign(win.style, prevRect);
+      maximized = false;
+    }
+  };
+
+  header.querySelector(".close-btn").onclick = async () => {
+    document.querySelector('.task-btn[data-task="live-lab"]')?.remove();
+    win.remove();
+  };
+}
+
+// ==========================================================
+// 🪟 Crear ventana principal
 // ==========================================================
 async function createUI() {
   const win = document.createElement("div");
@@ -148,17 +371,14 @@ async function createUI() {
         <button class="close-btn">✕</button>
       </div>
     </div>
-
     <div class="lab-body">
       <div class="lab-left open" id="lab-left">
         <div class="lab-cards" id="lab-cards"></div>
       </div>
-
       <div class="lab-main">
         <div id="strudel-wrapper" class="strudel-zone" style="opacity:0;visibility:hidden;">
           <div id="strudel-mask"></div>
         </div>
-
         <div id="hydra-container" style="opacity:0;visibility:hidden;">
           <canvas id="hydra-canvas"></canvas>
           <div id="hydra-editor">
@@ -168,21 +388,16 @@ async function createUI() {
               <button id="hydra-hide">🌓 Hide Editor</button>
             </div>
           </div>
-          <button id="hydra-show" title="Mostrar editor" style="display:none;">📝 Editor</button>
+          <button id="hydra-show" style="display:none;">📝 Editor</button>
         </div>
-
-        <div id="audio-unlock" style="display:none;">
-          <p>🔊 Haz click para habilitar el audio</p>
-        </div>
+        <div id="audio-unlock" style="display:none;"><p>🔊 Haz click para habilitar el audio</p></div>
       </div>
     </div>
-
     <button id="lab-folder-toggle" title="Mostrar/Ocultar panel">📁</button>
   `;
 
   document.body.appendChild(win);
 
-  // === Adaptación móvil ===
   if (isMobile) {
     Object.assign(win.style, {
       position: "fixed",
@@ -194,210 +409,20 @@ async function createUI() {
       borderRadius: "0",
       background: "rgba(10,10,15,0.92)",
       backdropFilter: "blur(10px)",
-      zIndex: "9999",
-      display: "flex",
-      flexDirection: "column",
-      overflow: "hidden",
-      transition: "opacity .25s ease, transform .25s ease",
-      opacity: "0",
-      transform: "translateY(10px)",
     });
     win.querySelector(".min-btn")?.remove();
     win.querySelector(".max-btn")?.remove();
-
-    requestAnimationFrame(() => {
-      win.style.opacity = "1";
-      win.style.transform = "translateY(0)";
-    });
-
     document.body.classList.add("mobile-mode");
-    win.style.maxWidth = "100vw";
-    win.style.overflowX = "hidden";
   }
 
   setupWindowControls(win, isMobile);
   setupPanelToggle();
   setupHydraUI();
 
-  await loadPortfolioCodes(); // 🔹 ahora se cargan desde JSON dinámico
-
+  await loadPortfolioCodes();
   if (!isMobile) addToTaskbar("Live Lab", "🎛️");
   bringToFront(win);
-
-  if (portfolioCodes.length > 0) handleCardClick(portfolioCodes[0]);
-}
-
-// ==========================================================
-// 📁 Panel lateral
-// ==========================================================
-function setupPanelToggle() {
-  const panel = document.getElementById("lab-left");
-  const toggle = document.getElementById("lab-folder-toggle");
-  if (!panel || !toggle) return;
-
-  toggle.addEventListener("click", () => {
-    const isOpen = panel.classList.toggle("open");
-    toggle.classList.toggle("active", isOpen);
-    toggle.textContent = isOpen ? "📁" : "📂";
-  });
-}
-
-// ==========================================================
-// 🎛️ Controles de ventana (desktop)
-// ==========================================================
-function setupWindowControls(win, isMobile) {
-  const header = win.querySelector(".lab-header");
-  let maximized = false;
-  let prevRect = null;
-
-  if (isMobile) {
-    const closeBtn = header.querySelector(".close-btn");
-    closeBtn.addEventListener("click", () => win.remove());
-    return;
-  }
-
-  // arrastre
-  header.addEventListener("mousedown", (e) => {
-    if (e.target.closest(".lab-buttons")) return;
-    e.preventDefault();
-    bringToFront(win);
-
-    const rect = win.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    const offsetY = e.clientY - rect.top;
-
-    function onMove(ev) {
-      const x = ev.clientX - offsetX;
-      const y = ev.clientY - offsetY;
-      win.style.left = Math.max(0, x) + "px";
-      win.style.top = Math.max(0, y) + "px";
-    }
-
-    function onUp() {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-    }
-
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
-  });
-
-  header.querySelector(".min-btn").addEventListener("click", () => {
-    win.style.display = "none";
-  });
-
-  header.querySelector(".max-btn").addEventListener("click", () => {
-    if (!maximized) {
-      prevRect = {
-        left: win.style.left,
-        top: win.style.top,
-        width: win.style.width,
-        height: win.style.height,
-      };
-      win.style.left = 0;
-      win.style.top = 0;
-      win.style.width = window.innerWidth + "px";
-      win.style.height = window.innerHeight - 40 + "px";
-      maximized = true;
-    } else {
-      Object.assign(win.style, prevRect);
-      maximized = false;
-    }
-  });
-
-  header.querySelector(".close-btn").addEventListener("click", () => {
-    const tbBtn = document.querySelector('.task-btn[data-task="live-lab"]');
-    if (tbBtn) tbBtn.remove();
-    disposeLiveLab(win);
-    win.remove();
-  });
-}
-
-// ==========================================================
-// 💾 Tarjetas
-// ==========================================================
-function populateCards() {
-  const container = document.getElementById("lab-cards");
-  if (!container) return;
-  container.innerHTML = "";
-
-  portfolioCodes.forEach((item) => {
-    const card = document.createElement("div");
-    card.className = "lab-card";
-    card.innerHTML = `
-      <img src="${item.thumb}" alt="${item.title}" class="lab-thumb"/>
-      <span>${item.title}</span>
-      <small class="tag ${item.type}">${item.type.toUpperCase()}</small>
-    `;
-    card.onclick = () => handleCardClick(item);
-    container.appendChild(card);
-  });
-}
-
-// ==========================================================
-// 🌈 HYDRA
-// ==========================================================
-function setupHydraUI() {
-  const runBtn = document.getElementById("hydra-run");
-  const hideBtn = document.getElementById("hydra-hide");
-  const showBtn = document.getElementById("hydra-show");
-
-  runBtn.onclick = () => runHydraCode();
-
-  hideBtn.onclick = () => {
-    document.getElementById("hydra-editor").classList.add("hidden");
-    showBtn.style.display = "inline-flex";
-  };
-  showBtn.onclick = () => {
-    document.getElementById("hydra-editor").classList.remove("hidden");
-    showBtn.style.display = "none";
-  };
-}
-
-function runHydraCode() {
-  const canvas = document.getElementById("hydra-canvas");
-  if (!canvas) return console.warn("⚠️ Canvas Hydra no encontrado");
-  const code = document.getElementById("hydra-code")?.value?.trim() || "";
-
-  canvas.style.display = "block";
-  canvas.style.visibility = "visible";
-
-  try { hydra?.synth?.stop(); } catch {}
-  hydra = null;
-
-  requestAnimationFrame(() => {
-    try {
-      hydra = new window.Hydra({ canvas, detectAudio: false, makeGlobal: true });
-      const container = document.getElementById("hydra-container");
-      const resizeObserver = new ResizeObserver(() => {
-        const w = container.clientWidth;
-        const h = container.clientHeight;
-        if (hydra && hydra.setResolution) hydra.setResolution(w, h);
-      });
-      resizeObserver.observe(container);
-      new Function(code)();
-      console.log("🎨 Hydra inicializada correctamente.");
-    } catch (err) {
-      console.error("❌ Error al iniciar Hydra:", err);
-    }
-  });
-}
-
-// ==========================================================
-// 🧹 Limpieza
-// ==========================================================
-function disposeLiveLab(win) {
-  try { hydra?.synth?.stop(); } catch {}
-  hydra = null;
-  delete window.hydra;
-  delete window.s0;
-  delete window.o0;
-
-  const iframe = win?.querySelector("#strudel-frame");
-  if (iframe) iframe.remove();
-
-  const overlay = win?.querySelector("#audio-unlock");
-  if (overlay) overlay.style.display = "none";
+  if (portfolioCodes.length) handleCardClick(portfolioCodes[0]);
 }
 
 // ==========================================================
@@ -406,12 +431,11 @@ function disposeLiveLab(win) {
 export async function openLiveLabWindow() {
   const existing = document.getElementById("live-lab");
   if (existing) {
-    console.log("♻️ Reutilizando Live Lab existente");
     existing.style.display = "";
     bringToFront(existing);
     return;
   }
   await ensureHydra();
   await createUI();
-  console.log("✅ Live Lab creado (modo adaptativo y JSON dinámico).");
+  console.log("✅ Live Lab (Hydra + Strudel Embed + archivos externos) listo.");
 }

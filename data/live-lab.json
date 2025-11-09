@@ -1,98 +1,92 @@
 [
   {
-    "title": "🌊 Oceanic Pulse",
+    "title": "Mi_primera_canción :)",
     "type": "strudel",
     "thumb": "icons/wave.png",
-    "url": "https://strudel.cc/#Ly8gZmlsbCBpbiBnYXBzIGJldHdlZW4gZXZlbnRzCg..."
+    "path": "data/patches/strudel/mi_primera_cancion.js"
   },
   {
-    "title": "🌈 Hydra Patch",
+    "title": "Hydra_Patch",
     "type": "hydra",
     "thumb": "icons/hydra.png",
     "code": "osc(10,0.1,1.2).modulate(noise(2)).kaleid(3).out(o0)"
   },
   {
-    "title": "Primer tema",
+    "title": "x=>x.speed",
     "type": "strudel",
     "thumb": "icons/wave.png",
-    "url": "https://strudel.cc/#c2V0Y3BtKDE1MC80KQoKJDogcygiPGJkKjQgLCBoaCo4LCA8Wy0gWy0gb2hdKjNdKjIgWy0gb2hdKjI%2BPiIpLmJhbmsoIlZpc2NvU3BhY2VEcnVtIikKCiQ6IG4oIjwwLCAyLCA0LCA2PiIpLnNjYWxlKCI8QzptYWpvciBGOm1ham9yPiIpLnMoInBpYW5vIikKCiQ6IG4oIjwwIDIgNCA2PioyIikuc2NhbGUoIjxDOm1ham9yIEY6bWFqb3I%2BIikucygicGlhbm8iKQoKJDogbigiPDYgWzIsNF0gMCAyPio4Iikuc2NhbGUoIjxDNDptYWpvciBGOm1ham9yPiIpLnMoImdtX3N5bnRoX2Nob2lyIikKCiQ6IG4oIjw3IC0gPDcgWzcgN10%2BIC0gNiAtIDw2IFs2IDZdPiAtPio4Iikuc2NhbGUoIjxDNDptYWpvciBGNDptYWpvcj4iKS5zKCJnbV90cmVtb2xvX3N0cmluZ3M6NCIp"
+    "path": "data/patches/strudel/xspeed.js"
   },
   {
-    "title": "🎚 Segundo tema: fx, stack y .off",
+    "title": "Primer_Intento_Granular",
     "type": "strudel",
     "thumb": "icons/wave.png",
-    "url": "https://strudel.cc/#c2V0Y3BtKDQwLzQpCgokOiBzdGFjaygKICBuKCI8MCAyIDYgOSA0IDIgNiA0PioxNiIpLnNjYWxlKCJDOm1ham9yIEE6bWlub3IiKS5zKCJwaWFubyIpCiAgLmRlbGF5KC4zKS5yb29tKC4zKS5scGYoIjQwMCA4MDAiKQogIC5vZmYoMS84LCB4PT54LnNwZWVkKDIpKQogIC5vZmYoMS84LCB4PT54LnNwZWVkKDQpKQopLl9wdW5jaGNhcmQoKQoKJDogc3RhY2soCiAgbigiPDAgLSAtIC0gWzAgMF0gLSAtIDwwIDAgMCBbMCAwIDBdPj4qMTYiKS5zKCJyb2xhbmR0cjgwOF9iZDoxMSIpLmdhaW4oMS4yKSwgCiAgbigiPDAgMCBbMCAwIDBdIDAgMCAwIDwwIFswIDBdPiA%2BKjMyIikucygicm9sYW5kdHI4MDhfaGg6MiIpLmdhaW4oLjQpCiAgLmxwZig0NTAwKS5kZWxheSguMyksCiAgbigiPC0gLSAtIC0gMSAtIC0gPC0gLSAtIFsxXT4%2BKjMyIikucygicm9sYW5kdHI4MDhfc2Q6MyIpLmdhaW4oMS4yKQogIC5scGYoMjUwMCkuZGVsYXkoMC4xKS5yb29tKC4xNSkKKS5fcHVuY2hjYXJkKCkKCiQ6IHN0YWNrKAogIG4oIjwwIDIgNiAwPio0Iikuc2NhbGUoIkMyOm1ham9yIEExOm1pbm9yIikucygiZ21fc3ludGhfYmFzc18xOjMiKS5nYWluKDAuNSkKICAubHBmKCI2MDAgODAwIikuX3B1bmNoY2FyZCgpCikK"
+    "path": "data/patches/strudel/primer_intento_granular.js"
   },
   {
-    "title": "🎛 Granular?",
+    "title": "Ambient_fmwaves",
     "type": "strudel",
     "thumb": "icons/wave.png",
-    "url": "https://strudel.cc/#c2FtcGxlcygnZ2l0aHViOnRpZGFsY3ljbGVzL2RpcnQtc2FtcGxlcycpCgokOiBuKHJ1bigxMikuc2xvdygyKSkucygiZm0iKS5zY3J1YigiezAuMyAwLjQgMC4yIDAuNX0lMTYiKSAvLyB0aGlzIGlzIHNjcnViaW5nIGRpZmVyZW50IHBhcnRzIG9mIHRoZSBzYW1wbGUKLmNsaXAocmFuZC5yYW5nZSguMDUsLjQpKS5fc2NvcGUoKQoKJDogc3RhY2soCiAgbigiPDAgPDAgWzAgLSAtIDBdPiAwIDA%2BKjQiKS5zKCJiZCIpLl9wdW5jaGNhcmQoKQogICxuKCI8LSAwIC0gMCAtIDwwIFsyIDIgNSAtXT4gLSAwPio4IikucygiaGgiKS5nYWluKDEuNSkuX3B1bmNoY2FyZCgpCiAgKS5iYW5rKCJyb2xhbmR0cjkwOSIpLmdhaW4oLjQp"
+    "path": "data/patches/strudel/ambient1.js"
   },
   {
-    "title": "🌫 Ambient",
+    "title": "Coding DnB/Jungle 1",
     "type": "strudel",
     "thumb": "icons/wave.png",
-    "url": "https://strudel.cc/#Ly8gQW1iaWVudCBmbSB3YXZlcyBieSBNaXNzaW5nVGV4dHVyZV9MYWIgQUtBIEZyZWVfV2F0ZXJtYXJrX1JlbW92ZXIKCgpzZXRjcG0oMjApCnNhbXBsZXMoJ2dpdGh1Yjp5YXh1L2NsZWFuLWJyZWFrcycpCgoKJDogbigiPFswIH4gNCB%2BIDddPi8yIikuYWRkKCI8MCAyIDQgMD4vNCIpLnNjYWxlKCI8QTM6bWlub3IgRTM6bWlub3I%2BIikKICAucygidHJpYW5nbGUiKSAgICAgICAgICAgICAgICAvLyB0aW1icmUgYmxhbmRvCiAgLmF0dGFjaygyKS5kZWNheSg2KS5zdXN0YWluKC42KS5yZWxlYXNlKDQpICAvLyBlbnZvbHZlbnRlIGxhcmdhCiAgLmZtKHNpbmUucmFuZ2UoMyw3KS5zbG93KDE2KSkgLy8gbW9kdWxhY2nDs24gRk0gc3V0aWwgeSBsZW50YQogIC5scGYoIjgwMDo4IikgICAgICAgICAgICAgICAgIC8vIGZpbHRybyBiYWpvIGNvbiBRIGxlbnRvIChscHEgZW4gbWluaSkKICAucm9vbSguNikuZ2FpbiguMzUpCiAgLm9yYml0KDEpCgokOiBzKCI8bnVtYmVyczowIG51bWJlcnM6ND4gbnVtYmVyczoxIG51bWJlcnM6MiBudW1iZXJzOjMiKQogIC5zbG93KDQpCiAgLmdhaW4oLjcpCiAgLmxwZig4MDApCiAgLmRlbGF5KDAuNikKICAucm9vbSgwLjgpLnNpemUoMC45KQogIC5zaGFwZSgwLjIpCiAgLm9yYml0KDIpCgokOiBuKCI8MCA0IDc%2BLzIiKS5zY2FsZSgiQTQ6bWlub3IiKQogIC5zKCJzYXd0b290aCx0cmlhbmdsZSIpCiAgLmZtKHNpbmUucmFuZ2UoNywxMikuc2xvdygyNCkpCiAgLmZtaCgiMC45IikKICAuYXR0YWNrKDMpLmRlY2F5KDcpLnN1c3RhaW4oLjcpLnJlbGVhc2UoNSkKICAubHBmKHNpbmUucmFuZ2UoMjUwMCwgNDAwMCkuc2xvdygxOCkpIAogIC5yb29tKDAuOCkKICAuZ2FpbigwLjA4KQogIC5vcmJpdCg0KQoKJDogbigiPDAgfiAtMyB%2BIC01Pi80Iikuc2NhbGUoIkEyOm1pbm9yIikKICAucygic2luZSIpCiAgLmZtKHNpbmUucmFuZ2UoMTAsIDUwKS5zbG93KDE2KSkKICAuYXR0YWNrKDIpLmRlY2F5KDYpLnN1c3RhaW4oLjcpLnJlbGVhc2UoNSkKICAuZ2FpbigwLjQpCiAgLmxwZihzaW5lLnJhbmdlKDMwMCwgOTAwKS5zbG93KDgpKSAKICAucm9vbSgwLjUpCiAgLm9yYml0KDUpCgokOiBuKCIwLDIsNCw2LDgsMTAiKS5zY2FsZSgiPEEzOm1pbm9yIEUzOm1pbm9yPiIpCiAgLnMoImdtX3N0cmluZ19lbnNlbWJsZV8xOjEiKS5zbG93KDIpCiAgLmxwZigxMDAwKS5kZWxheSguMikKICAuZm0oMzApCiAgLmdhaW4oLjMpCiAgLnJvb20oMC41KS5fcHVuY2hjYXJkKCkKCgovL0RSVU1TUwoKJDogc3RhY2soCiAgCiAgcygiPGJkIGJkIGJkIDxiZCBbYmQgW2JkIGJkXV0%2BPio4IikuYmFuaygicm9sYW5kdHI5MDkiKQogIC5kZWxheSguMSkKICAucm9vbSgwLjMpCiAgLmdhaW4oMSkKICAub3JiaXQoMykKICAuZGlzdG9ydCgiLjIiKSwKICAKICBzKCI8LSBzZDoyPio0IikuYmFuaygicm9sYW5kdHI4MDgiKQogIC5kZWxheSguMykKICAucm9vbSgwLjMpCiAgLmdhaW4oMC43KQogIC5vcmJpdCgzKQopLl9wdW5jaGNhcmQoKQoKJDogbigiPFswIC0gLSAtXSAtIC0gLSAtPio4Iikuc2xvdygiMSIpLnNjYWxlKCJBNDptaW5vciIpLnMoInNpbmUsIHNhdzouOCIpLl9zY29wZSgpCgokOiBuKCI8MCE4PiozMiIpLnMoImhoIikuYmFuaygidmlzY29zcGFjZWRydW0iKS5nYWluKCI8LjIgLjQuIC42IC44PioxNiIpLmRlbGF5KC4yKQoKCiQ6IHMoIjxzcG9ydCE4IG1lY2hhbmljYWxtYW4hOD4iKQogIC5maXQoKQogIC5zcGVlZCgiPFsxIDVdIDEgPDIgMz4gND4qOCIpCiAgLmNob3AoNykKICAuaHBmKHNpbmUucmFuZ2UoMjAwMCwgNjAwMCkuc2xvdygxMikpCiAgLmRlYyhzaW5lLnJhbmdlKC4yLCAxLjIpLnNsb3coOCkpIAogIC5kZWxheSguMSkKICAucm9vbSgwLjcpCiAgLmdhaW4oMC40KQogIC5vcmJpdCgzKQoK"
+    "path": "data/patches/strudel/dnb1.js"
   },
   {
-    "title": "🔥 DnB",
+    "title": "Funk_Brasileño",
     "type": "strudel",
     "thumb": "icons/wave.png",
-    "url": ""
+    "path": "data/patches/strudel/funkbrasil.js"
   },
   {
-    "title": "💃 FunkCarioca",
+    "title": "pixelate_crush",
     "type": "strudel",
     "thumb": "icons/wave.png",
-    "url": ""
+    "path": "data/patches/strudel/pixelate_crush.js"
   },
   {
-    "title": "🎹 PianosYHydra",
+    "title": "bajo.sinTerminar",
     "type": "strudel",
     "thumb": "icons/wave.png",
-    "url": ""
+    "path": "data/patches/strudel/bajopunk.js"
   },
   {
-    "title": "🎸 Bajo punk",
+    "title": "Ambient2_PajarosDrone",
     "type": "strudel",
     "thumb": "icons/wave.png",
-    "url": ""
+    "path": "data/patches/strudel/ambient2.js"
   },
   {
-    "title": "🕊 Ambient PajarosDrone",
+    "title": "Contrapunto",
     "type": "strudel",
     "thumb": "icons/wave.png",
-    "url": ""
+    "path": "data/patches/strudel/contrapunto.js"
   },
   {
-    "title": "🎼 PianosSueltos (Contrapunto automatizado)",
+    "title": "Coding_House",
     "type": "strudel",
     "thumb": "icons/wave.png",
-    "url": ""
+    "path": "data/patches/strudel/house.js"
   },
   {
-    "title": "🤪 Locurilla Jaus",
+    "title": "Coding DnB/Jungle 1",
     "type": "strudel",
     "thumb": "icons/wave.png",
-    "url": ""
+    "path": "data/patches/strudel/dnb2.js"
   },
   {
-    "title": "📹 AphexCam",
+    "title": "Coding_Trance (@_switch_angel tutorial)",
     "type": "strudel",
     "thumb": "icons/wave.png",
-    "url": ""
+    "path": "data/patches/strudel/codingtrance.js"
   },
   {
-    "title": "💫 TranceTutorial",
+    "title": "Coding_House 2",
     "type": "strudel",
     "thumb": "icons/wave.png",
-    "url": ""
-  },
-  {
-    "title": "🎹 PianosPicaditos1 (peta un poco) + Pianospicaditos2",
-    "type": "strudel",
-    "thumb": "icons/wave.png",
-    "url": ""
+    "path": "data/patches/strudel/house2.js"
   }
 ]
