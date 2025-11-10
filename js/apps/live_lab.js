@@ -72,7 +72,7 @@ async function getPatchCode(item) {
 // ==========================================================
 async function loadPortfolioCodes() {
   try {
-    const res = await fetch("data/live-lab.json", { cache: "no-store" });
+    const res = await fetch("missingtexturelabweb/data/live-lab.json", { cache: "no-store" });
     if (!res.ok) throw new Error(`Error al cargar JSON (${res.status})`);
 
     portfolioCodes = await res.json();
