@@ -1,0 +1,7 @@
+s0.initCam()
+src(s0)
+  .shift([0.1,0.2,0.3,0.4].smooth(),0,-0.2,0)
+  .modulatePixelate(noise(1,0.2),[1,100].smooth().fast(0.25))
+  .saturate(1.2)
+  .colorama(0.25)
+  .out(o0)

@@ -6,6 +6,13 @@
     "path": "data/patches/strudel/mi_primera_cancion.js"
   },
   {
+    "title": "Neuronal_conex",
+    "type": "hydra", 
+    "thumb": "icons/hydra.png",
+    "usesThree": true,
+    "path": "data/patches/hydra/neuronalconex.js"
+  },
+  {
     "title": "Glitchy Snow",
     "type": "hydra", 
     "thumb": "icons/hydra.png",
@@ -13,11 +20,28 @@
     "path": "data/patches/hydra/snow.js"
   },
   {
-    "title": "Neuronal_conex",
+    "title": "Celular_Camera",
     "type": "hydra", 
     "thumb": "icons/hydra.png",
-    "usesThree": true,
-    "path": "data/patches/hydra/neuronalconex.js"
+    "path": "data/patches/hydra/celulas.js"
+  },
+  {
+    "title": "Kaleido_Camera",
+    "type": "hydra", 
+    "thumb": "icons/hydra.png",
+    "path": "data/patches/hydra/kaleido.js"
+  },
+  {
+    "title": "Circular_noise_Camera",
+    "type": "hydra", 
+    "thumb": "icons/hydra.png",
+    "path": "data/patches/hydra/circular.js"
+  },
+  {
+    "title": "color_noise_Camera",
+    "type": "hydra", 
+    "thumb": "icons/hydra.png",
+    "path": "data/patches/hydra/color_noise.js"
   },
   {
     "title": "x=>x.speed",

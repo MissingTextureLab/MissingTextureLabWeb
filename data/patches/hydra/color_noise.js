@@ -1,0 +1,8 @@
+s0.initCam()
+osc(6,0.02,1.2)
+  .kaleid(3)
+  .mask(shape(6,0.9,0.9))
+  .modulate(noise(5,0.3),0.2)
+  .color(1,0.2,0.5)
+  .blend(src(s0).colorama(10).scale(1.5,0.5).saturate(2),0.3)
+  .out(o0)

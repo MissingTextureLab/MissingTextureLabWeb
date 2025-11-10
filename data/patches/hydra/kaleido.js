@@ -1,0 +1,9 @@
+bpm=120
+s0.initCam()
+src(s0)
+  .kaleid([0.5,1,2,3,4,5,6,7,8,7,6,5,4,3,2,1,0.5].smooth())
+  .modulateKaleid(osc([1,50,100,200],0.1,0.3),[1,5,10,20].smooth(),0.3)
+  .color(1,-0.5,1)
+  .contrast(1.5)
+  .modulateScale(osc(3).thresh(0.5).invert(),0.2)
+  .out(o0)
