@@ -72,7 +72,12 @@ async function getPatchCode(item) {
 // ==========================================================
 async function loadPortfolioCodes() {
   try {
-    const res = await fetch("../../data/live-lab.json", { cache: "no-store" });
+    // 🌍 Detectar ruta base automáticamente
+    const baseURL = window.location.hostname.includes("github.io")
+      ? `${window.location.origin}/MissingTextureLabWeb/data/live-lab.json`
+      : "../../data/live-lab.json";
+
+    const res = await fetch(baseURL, { cache: "no-store" });
     if (!res.ok) throw new Error(`Error al cargar JSON (${res.status})`);
 
     portfolioCodes = await res.json();
