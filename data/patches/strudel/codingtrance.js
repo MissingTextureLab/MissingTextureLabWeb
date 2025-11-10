@@ -1,6 +1,6 @@
 export default `
 
-// Código basado en el tutorial “Coding trance” de @_switch_angel.
+// Código basado en el tutorial “Coding Trance” de @_switch_angel.
 // Incluye dos funciones creadas por ella, compartidas en el servidor oficial de Discord de la comunidad de Strudel.
 // Agradezco profundamente a @_switch_angel por introducirme mediante su contenido en esta nueva forma de hacer música <3
 

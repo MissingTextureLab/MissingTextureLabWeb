@@ -1,11 +1,21 @@
 // ==========================================================
-// 🎛️ live_lab_optimized.js — Hydra + Strudel embed con carga desde .js externos
+// 🎛️ live_lab_optimized.js — Hydra + Strudel embed con soporte móvil (auto Hydra)
 // ==========================================================
 import { bringToFront, addToTaskbar } from "../windows.js";
 
 let hydra;
 let portfolioCodes = [];
 let strudelEmbedLoaded = false;
+
+// ==========================================================
+// 📏 Fix viewport en móviles (Safari, Chrome)
+// ==========================================================
+function setRealVh() {
+  document.documentElement.style.setProperty("--real-vh", `${window.innerHeight}px`);
+}
+window.addEventListener("resize", setRealVh);
+window.addEventListener("orientationchange", setRealVh);
+setRealVh();
 
 // ==========================================================
 // 🔧 Utilidades generales
@@ -30,9 +40,7 @@ const lazyLoadScript = (src) =>
 
 async function ensureHydra() {
   if (!window.Hydra)
-    await lazyLoadScript(
-      "https://unpkg.com/hydra-synth@1.3.29/dist/hydra-synth.js"
-    );
+    await lazyLoadScript("https://unpkg.com/hydra-synth@1.3.29/dist/hydra-synth.js");
   console.log("🎨 Hydra lista.");
 }
 
@@ -64,19 +72,17 @@ async function getPatchCode(item) {
 // ==========================================================
 async function loadPortfolioCodes() {
   try {
-    const res = await fetch("./data/live-lab.json", { cache: "no-store" });
+    const res = await fetch("../../data/live-lab.json", { cache: "no-store" });
     if (!res.ok) throw new Error(`Error al cargar JSON (${res.status})`);
 
     portfolioCodes = await res.json();
     populateCards();
     console.log("📦 Tarjetas cargadas:", portfolioCodes.length);
 
-    // 🔹 Cargar automáticamente el primer patch
     if (portfolioCodes.length > 0) {
       await handleCardClick(portfolioCodes[0]);
       console.log(`🎬 Primer patch cargado automáticamente: ${portfolioCodes[0].title}`);
     }
-
   } catch (err) {
     console.error("⚠️ No se pudieron cargar las tarjetas:", err);
   }
@@ -115,14 +121,13 @@ async function handleCardClick(item) {
     toggle.textContent = "📂";
   }
 
-  // === STRUDEL EMBED ===
+  // === STRUDEL ===
   if (item.type === "strudel") {
     toggleVisible(hydraContainer, false);
     toggleVisible(strudelWrapper, true);
 
     const mask = document.getElementById("strudel-mask");
 
-    // 🔹 Limpieza total del Strudel anterior
     try {
       if (window.Tone?.Transport?.state !== "stopped") {
         await window.Tone.Transport.stop();
@@ -134,23 +139,31 @@ async function handleCardClick(item) {
     } catch (err) {
       console.warn("⚠️ Error al limpiar Strudel anterior:", err);
     }
-    mask.innerHTML = ""; // limpia cualquier <strudel-repl> previo
 
-    // 🔹 Fade in/out para transiciones suaves
+    mask.innerHTML = "";
     mask.style.opacity = 0;
     setTimeout(() => (mask.style.opacity = 1), 150);
 
-    // 🔹 Asegurar carga del embed
     if (!strudelEmbedLoaded) {
       await lazyLoadScript("https://unpkg.com/@strudel/embed@latest");
       strudelEmbedLoaded = true;
       console.log("🎶 @strudel/embed cargado.");
     }
 
-    // 🔹 Crear nueva instancia Strudel
+    // =======================================================
+    // 🧩 Cargar el código real, mantenerlo visible y seguro
+    // =======================================================
     const code = await getPatchCode(item);
+
+    // ⚙️ Crear versión Latin1-safe del código (acentos reemplazados)
+    const latinSafe = code
+      .normalize("NFD")                      // separa acentos
+      .replace(/[\u0300-\u036f]/g, "")       // elimina diacríticos
+      .replace(/[^\x00-\xFF]/g, "");         // elimina cualquier otro UTF-8 raro
+
+    // ✅ Crear el elemento embed real
     const repl = document.createElement("strudel-repl");
-    repl.setAttribute("code", code);
+    repl.setAttribute("code", latinSafe);
     Object.assign(repl.style, {
       width: "100%",
       height: "100%",
@@ -158,11 +171,12 @@ async function handleCardClick(item) {
       background: "rgba(10,10,15,0.95)",
       border: "none",
     });
+
     mask.appendChild(repl);
 
-    console.log(`🎵 Strudel embed cargado: ${item.title}`);
+    // 🔍 Opcional: mostrar código original (con acentos) en consola
+    console.log("🎼 Código original (UTF-8):", code);
 
-    // 🎧 Autounlock de audio (Tone.js)
     if (window.Tone && Tone.context?.state === "suspended") {
       overlay.style.display = "flex";
       overlay.onclick = () =>
@@ -170,7 +184,6 @@ async function handleCardClick(item) {
     }
     return;
   }
-
 
   // === HYDRA ===
   if (item.type === "hydra") {
@@ -182,10 +195,6 @@ async function handleCardClick(item) {
     codeArea.value = code;
 
     requestAnimationFrame(() => {
-      const canvas = document.getElementById("hydra-canvas");
-      if (!canvas) return;
-      canvas.width = hydraContainer.clientWidth;
-      canvas.height = hydraContainer.clientHeight;
       runHydraCode();
     });
   }
@@ -244,49 +253,71 @@ function setupHydraUI() {
   };
 }
 
-function runHydraCode() {
+// ==========================================================
+// 🎨 Inicializar Hydra (optimizada + fade solo canvas)
+// ==========================================================
+async function runHydraCode() {
+  const container = document.getElementById("hydra-container");
   const canvas = document.getElementById("hydra-canvas");
-  if (!canvas) return;
+  if (!canvas || !container) return;
+
   const code = document.getElementById("hydra-code")?.value?.trim() || "";
 
-  // 🔹 detener instancias previas
+  canvas.style.transition = "opacity 0.25s ease";
+  canvas.style.opacity = "0.0";
+  await new Promise((r) => setTimeout(r, 250));
+
+  const rect = container.getBoundingClientRect();
+  canvas.width = rect.width > 0 ? rect.width : window.innerWidth;
+  canvas.height = rect.height > 0 ? rect.height : window.innerHeight;
+
   if (hydra) {
     try {
       hydra.synth.stop();
-      hydra.resizeObserver?.disconnect?.();
-      hydra.canvas
-        ?.getContext("webgl")
-        ?.getExtension("WEBGL_lose_context")
-        ?.loseContext();
     } catch (e) {
       console.warn("Hydra cleanup warning:", e);
     }
     hydra = null;
   }
 
-  requestAnimationFrame(() => {
-    try {
-      hydra = new window.Hydra({
-        canvas,
-        detectAudio: true,
-        makeGlobal: true,
-      });
-      window._hydra = hydra;
-      console.log("🔍 Hydra global disponible en window._hydra");
+  try {
+    hydra = new window.Hydra({
+      canvas,
+      detectAudio: false,
+      makeGlobal: true,
+    });
+    window._hydra = hydra;
 
-      const container = document.getElementById("hydra-container");
-      if (hydra.resizeObserver) hydra.resizeObserver.disconnect?.();
-      hydra.resizeObserver = new ResizeObserver(() => {
-        hydra.setResolution(container.clientWidth, container.clientHeight);
-      });
-      hydra.resizeObserver.observe(container);
+    hydra.setResolution(canvas.width, canvas.height);
+    console.log("🎨 Hydra inicializada sin flash.");
 
-      new Function(code)();
-      console.log("🎨 Hydra ejecutado correctamente.");
-    } catch (err) {
-      console.error("❌ Error al iniciar Hydra:", err);
-    }
-  });
+    requestAnimationFrame(() => {
+      try {
+        if (code && code.length > 5) {
+          new Function(code)();
+          console.log("🎛️ Patch Hydra ejecutado.");
+        } else {
+          osc(10, 0.1, 1.2).modulate(noise(2)).kaleid(3).out(o0);
+        }
+      } catch (err) {
+        console.error("❌ Error ejecutando código Hydra:", err);
+      }
+
+      setTimeout(() => {
+        canvas.style.opacity = "1.0";
+      }, 60);
+    });
+
+    window.addEventListener("resize", () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      hydra.synth.setResolution(w, h);
+      hydra.setResolution(w, h);
+    });
+  } catch (err) {
+    console.error("❌ Error al iniciar Hydra:", err);
+    canvas.style.opacity = "1.0";
+  }
 }
 
 // ==========================================================
@@ -422,7 +453,6 @@ async function createUI() {
   await loadPortfolioCodes();
   if (!isMobile) addToTaskbar("Live Lab", "🎛️");
   bringToFront(win);
-  if (portfolioCodes.length) handleCardClick(portfolioCodes[0]);
 }
 
 // ==========================================================
@@ -437,5 +467,5 @@ export async function openLiveLabWindow() {
   }
   await ensureHydra();
   await createUI();
-  console.log("✅ Live Lab (Hydra + Strudel Embed + archivos externos) listo.");
+  console.log("✅ Live Lab (Hydra + Strudel + móvil) listo.");
 }

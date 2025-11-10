@@ -230,6 +230,7 @@
   height: 100%;
   display: block;
   background: #000;
+  transition: opacity 0.25s ease;
 }
 
 /* --- Editor Hydra --- */
@@ -353,15 +354,19 @@
   text-shadow: 0 0 10px rgba(168,85,247,0.9);
 }
 
+
+
 /* =========================================================
-   📱 MODO MÓVIL
+   📱 MODO MÓVIL — versión revisada para Hydra visible
    ========================================================= */
 @media (max-width: 800px) {
+
+  /* --- Ventana principal --- */
   .window-live-lab.simple {
     position: fixed;
     inset: 0;
     width: 100vw !important;
-    height: var(--real-vh);
+    height: var(--real-vh, 100vh);
     border: none;
     border-radius: 0;
     background: rgba(10,10,15,0.92);
@@ -369,8 +374,10 @@
     z-index: 9999;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
 
+  /* --- Header --- */
   .lab-header {
     position: fixed;
     top: 0;
@@ -387,6 +394,7 @@
     z-index: 10010;
   }
 
+  /* --- Cuerpo general --- */
   .lab-body {
     position: absolute;
     top: 48px;
@@ -397,17 +405,18 @@
     display: flex;
     flex-direction: column;
     width: 100vw;
+    height: calc(var(--real-vh, 100vh) - 48px);
     overflow: hidden;
   }
 
-  /* 🔹 Panel lateral deslizable */
+  /* --- Panel lateral --- */
   .lab-left {
     position: fixed;
     top: 48px;
     left: 0;
     width: 75%;
     max-width: 280px;
-    height: calc(var(--real-vh) - 48px);
+    height: calc(var(--real-vh, 100vh) - 48px);
     background: rgba(15,15,20,0.98);
     border-right: 1px solid rgba(255,255,255,0.1);
     transform: translateX(-100%);
@@ -420,6 +429,7 @@
   }
   .lab-left.open { transform: translateX(0); }
 
+  /* --- Botón carpeta --- */
   #lab-folder-toggle {
     position: fixed;
     bottom: 12px;
@@ -427,47 +437,61 @@
     z-index: 10025;
   }
 
-  /* Hydra móvil */
+  /* =========================================================
+     🌈 HYDRA visible a pantalla completa
+     ========================================================= */
   #hydra-container {
-    position: relative !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
     width: 100vw !important;
-    height: calc(var(--real-vh, 100vh) - var(--taskbar-h, 48px)) !important;
-    background: #000;
-    overflow: hidden;
-    display: flex !important;
-    flex-direction: column;
-    justify-content: flex-end;
+    height: calc(var(--real-vh, 100vh) - 48px) !important;
+    background: #000 !important;
+    overflow: hidden !important;
+    display: block !important;
+    z-index: 50 !important;
   }
+
   #hydra-canvas {
     position: absolute !important;
     inset: 0 !important;
     width: 100% !important;
     height: 100% !important;
     display: block !important;
-    background: #000;
-    z-index: 0;
+    opacity: 1 !important;
+    visibility: visible !important;
+    background: #000 !important;
+    z-index: 51 !important;
+    transform: translateZ(0);
+    will-change: transform;
+    transition: opacity 0.25s ease;
   }
 
+  /* --- Editor Hydra --- */
   #hydra-editor {
     position: absolute !important;
     bottom: 0 !important;
     left: 0 !important;
     width: 100% !important;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.85);
     border-top: 1px solid rgba(255,255,255,0.1);
     backdrop-filter: blur(8px);
     padding: 12px 10px 60px;
     display: flex !important;
     flex-direction: column;
-    z-index: 10;
+    z-index: 60 !important;
     transition: transform 0.3s ease, opacity 0.3s ease;
   }
+
   #hydra-editor.hidden {
     transform: translateY(100%);
     opacity: 0;
     pointer-events: none;
   }
 
+  /* --- Controles --- */
   .hydra-controls {
     position: absolute;
     bottom: 55px;
@@ -476,7 +500,7 @@
     display: flex;
     justify-content: space-around;
     gap: 8px;
-    z-index: 12;
+    z-index: 65;
     padding: 0 12px;
   }
   .hydra-controls button {
@@ -499,17 +523,40 @@
     border-radius: 8px;
     padding: 8px 10px;
     font-size: 14px;
-    z-index: 20;
+    z-index: 70;
   }
+
+  /* =========================================================
+     🎵 STRUDEL
+     ========================================================= */
   #strudel-wrapper {
-    position: relative !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
     width: 100vw !important;
     height: calc(var(--real-vh, 100vh) - 48px) !important;
     display: flex !important;
+    background: #000 !important;
+    z-index: 40 !important;
   }
+
   #strudel-mask {
     flex: 1;
     width: 100% !important;
     height: 100% !important;
+  }
+
+  /* =========================================================
+     🔊 Overlays
+     ========================================================= */
+  #audio-unlock {
+    z-index: 200 !important;
+  }
+
+  /* --- Seguridad de stacking --- */
+  .lab-main,
+  .window-live-lab.simple,
+  .lab-body {
+    overflow: visible !important;
   }
 }
