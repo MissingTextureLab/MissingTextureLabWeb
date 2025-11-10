@@ -5,13 +5,7 @@
     "thumb": "icons/wave.png",
     "path": "data/patches/strudel/mi_primera_cancion.js"
   },
-  {
-    "title": "Neuronal_conex",
-    "type": "hydra", 
-    "thumb": "icons/hydra.png",
-    "usesThree": true,
-    "path": "data/patches/hydra/neuronalconex.js"
-  },
+
   {
     "title": "Glitchy Snow",
     "type": "hydra", 
