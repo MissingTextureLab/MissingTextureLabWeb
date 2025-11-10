@@ -148,6 +148,11 @@
 .lab-card .tag.hydra {
   background: rgba(14,165,233,0.25);
 }
+/* --- Etiqueta THREE --- */
+.tag.three {
+  background: var(--frutiger-blue);
+  color: var(--frutiger-white);
+}
 
 /* =========================================================
    🌈 ZONA PRINCIPAL (Hydra / Strudel)
@@ -353,7 +358,6 @@
   border-color: rgba(168,85,247,0.4);
   text-shadow: 0 0 10px rgba(168,85,247,0.9);
 }
-
 
 
 /* =========================================================

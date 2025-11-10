@@ -6,10 +6,18 @@
     "path": "data/patches/strudel/mi_primera_cancion.js"
   },
   {
-    "title": "Hydra_Patch",
-    "type": "hydra",
+    "title": "Glitchy Snow",
+    "type": "hydra", 
     "thumb": "icons/hydra.png",
-    "code": "osc(10,0.1,1.2).modulate(noise(2)).kaleid(3).out(o0)"
+    "usesThree": true,
+    "path": "data/patches/hydra/snow.js"
+  },
+  {
+    "title": "Neuronal_conex",
+    "type": "hydra", 
+    "thumb": "icons/hydra.png",
+    "usesThree": true,
+    "path": "data/patches/hydra/neuronalconex.js"
   },
   {
     "title": "x=>x.speed",

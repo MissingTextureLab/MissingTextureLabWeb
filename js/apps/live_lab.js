@@ -1,6 +1,12 @@
 // ==========================================================
-// 🎛️ live_lab_optimized.js — Hydra + Strudel embed con soporte móvil (auto Hydra)
+// 🎛️ live_lab_optimized.js — Hydra + Strudel + Three.js con soporte móvil
 // ==========================================================
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+import { SimplexNoise } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/math/SimplexNoise.js";
+import { EffectComposer } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/postprocessing/UnrealBloomPass.js";
+
 import { bringToFront, addToTaskbar } from "../windows.js";
 
 let hydra;
@@ -38,6 +44,9 @@ const lazyLoadScript = (src) =>
     document.head.appendChild(s);
   });
 
+// ==========================================================
+// 🎨 Asegurar Hydra cargada
+// ==========================================================
 async function ensureHydra() {
   if (!window.Hydra)
     await lazyLoadScript("https://unpkg.com/hydra-synth@1.3.29/dist/hydra-synth.js");
@@ -45,20 +54,64 @@ async function ensureHydra() {
 }
 
 // ==========================================================
-// 💾 Utilidad: obtener código desde item.code o item.path
+// 🧩 Asegurar Three.js y dependencias
+// ==========================================================
+async function ensureThree() {
+  if (window.THREE) return;
+  window.THREE = THREE;
+  window.SimplexNoise = SimplexNoise;
+  window.EffectComposer = EffectComposer;
+  window.RenderPass = RenderPass;
+  window.UnrealBloomPass = UnrealBloomPass;
+  console.log("✅ Three.js y dependencias globales listas (desde import ESM).");
+}
+
+// ==========================================================
+// 🧹 Limpieza global para Three.js overlays
+// ==========================================================
+function cleanupThreeOverlay() {
+  const overlay = window._threeCanvas;
+  if (overlay) {
+    try {
+      overlay.remove();
+      console.log("🧹 Canvas Three.js eliminado.");
+    } catch (e) {
+      console.warn("⚠️ No se pudo eliminar el canvas Three:", e);
+    }
+  }
+  window._threeCanvas = null;
+  if (window._threeAnimationId) {
+    cancelAnimationFrame(window._threeAnimationId);
+    window._threeAnimationId = null;
+  }
+}
+
+// ==========================================================
+// ✂️ Limpieza de código export default en patches
+// ==========================================================
+function sanitizePatchCode(raw) {
+  if (!raw) return "";
+  return raw
+    .replace(/^export\s+default\s*`/, "")
+    .replace(/`;\s*$/, "")
+    .replace(/`\s*$/, "")
+    .replace(/\uFEFF/g, "")
+    .replace(/\r/g, "")
+    .trim();
+}
+
+// ==========================================================
+// 💾 Obtener código desde item.code o item.path
 // ==========================================================
 async function getPatchCode(item) {
-  if (item.code) return item.code.trim();
+  if (item.code) return sanitizePatchCode(item.code);
 
   if (item.path) {
     try {
       const res = await fetch(item.path);
       if (!res.ok) throw new Error(`Error al cargar patch: ${item.path}`);
       const text = await res.text();
-
-      const match = text.match(/export\s+default\s+`([\s\S]*)`;/);
-      if (match) return match[1].trim();
-      return text.trim();
+      return sanitizePatchCode(text);
     } catch (err) {
       console.error("⚠️ Error cargando patch externo:", err);
       return "";
@@ -72,8 +125,7 @@ async function getPatchCode(item) {
 // ==========================================================
 async function loadPortfolioCodes() {
   try {
-    const baseURL = window.location.origin + window.location.pathname.split("/").slice(0, -1).join("/");
-    const res = await fetch(`${baseURL}/data/live-lab.json`, { cache: "no-store" });
+    const res = await fetch("./data/live-lab.json", { cache: "no-store" });
     if (!res.ok) throw new Error(`Error al cargar JSON (${res.status})`);
 
     portfolioCodes = await res.json();
@@ -93,19 +145,17 @@ async function loadPortfolioCodes() {
 // 🧠 Lógica principal de selección de tarjeta
 // ==========================================================
 async function handleCardClick(item) {
+  cleanupThreeOverlay(); // 🔹 Limpia antes de cambiar de patch
+
   const hydraContainer = document.getElementById("hydra-container");
   const strudelWrapper = document.getElementById("strudel-wrapper");
   const overlay = document.getElementById("audio-unlock");
 
-  // 🔹 Apagar Hydra si estaba corriendo
   if (hydra) {
     try {
       hydra.synth.stop();
       hydra.resizeObserver?.disconnect?.();
-      hydra.canvas
-        ?.getContext("webgl")
-        ?.getExtension("WEBGL_lose_context")
-        ?.loseContext();
+      hydra.canvas?.getContext("webgl")?.getExtension("WEBGL_lose_context")?.loseContext();
     } catch (e) {
       console.warn("Hydra stop warning:", e);
     }
@@ -128,7 +178,6 @@ async function handleCardClick(item) {
     toggleVisible(strudelWrapper, true);
 
     const mask = document.getElementById("strudel-mask");
-
     try {
       if (window.Tone?.Transport?.state !== "stopped") {
         await window.Tone.Transport.stop();
@@ -151,18 +200,12 @@ async function handleCardClick(item) {
       console.log("🎶 @strudel/embed cargado.");
     }
 
-    // =======================================================
-    // 🧩 Cargar el código real, mantenerlo visible y seguro
-    // =======================================================
     const code = await getPatchCode(item);
-
-    // ⚙️ Crear versión Latin1-safe del código (acentos reemplazados)
     const latinSafe = code
-      .normalize("NFD")                      // separa acentos
-      .replace(/[\u0300-\u036f]/g, "")       // elimina diacríticos
-      .replace(/[^\x00-\xFF]/g, "");         // elimina cualquier otro UTF-8 raro
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\x00-\xFF]/g, "");
 
-    // ✅ Crear el elemento embed real
     const repl = document.createElement("strudel-repl");
     repl.setAttribute("code", latinSafe);
     Object.assign(repl.style, {
@@ -174,8 +217,6 @@ async function handleCardClick(item) {
     });
 
     mask.appendChild(repl);
-
-    // 🔍 Opcional: mostrar código original (con acentos) en consola
     console.log("🎼 Código original (UTF-8):", code);
 
     if (window.Tone && Tone.context?.state === "suspended") {
@@ -186,8 +227,8 @@ async function handleCardClick(item) {
     return;
   }
 
-  // === HYDRA ===
-  if (item.type === "hydra") {
+  // === HYDRA / HYDRA-THREE ===
+  if (item.type === "hydra" || item.type === "hydra-three") {
     toggleVisible(strudelWrapper, false);
     toggleVisible(hydraContainer, true);
 
@@ -195,9 +236,7 @@ async function handleCardClick(item) {
     const codeArea = document.getElementById("hydra-code");
     codeArea.value = code;
 
-    requestAnimationFrame(() => {
-      runHydraCode();
-    });
+    requestAnimationFrame(() => runHydraCode());
   }
 }
 
@@ -212,52 +251,28 @@ function populateCards() {
   portfolioCodes.forEach((item) => {
     const card = document.createElement("div");
     card.className = "lab-card";
+
+    let tagsHTML = `<small class="tag ${item.type}">${item.type.toUpperCase()}</small>`;
+    if (item.usesThree || item.type === "hydra-three") {
+      tagsHTML += `<small class="tag three">THREE</small>`;
+    }
+
     card.innerHTML = `
       <span class="lab-title">${item.title}</span>
-      <small class="tag ${item.type}">${item.type.toUpperCase()}</small>
+      ${tagsHTML}
     `;
+
     card.onclick = () => handleCardClick(item);
     container.appendChild(card);
   });
 }
 
 // ==========================================================
-// 📁 Panel lateral
-// ==========================================================
-function setupPanelToggle() {
-  const panel = document.getElementById("lab-left");
-  const toggle = document.getElementById("lab-folder-toggle");
-  if (!panel || !toggle) return;
-  toggle.addEventListener("click", () => {
-    const isOpen = panel.classList.toggle("open");
-    toggle.classList.toggle("active", isOpen);
-    toggle.textContent = isOpen ? "📁" : "📂";
-  });
-}
-
-// ==========================================================
 // 🌈 HYDRA (entorno completo optimizado)
 // ==========================================================
-function setupHydraUI() {
-  const runBtn = document.getElementById("hydra-run");
-  const hideBtn = document.getElementById("hydra-hide");
-  const showBtn = document.getElementById("hydra-show");
-
-  runBtn.onclick = () => runHydraCode();
-  hideBtn.onclick = () => {
-    document.getElementById("hydra-editor").classList.add("hidden");
-    showBtn.style.display = "inline-flex";
-  };
-  showBtn.onclick = () => {
-    document.getElementById("hydra-editor").classList.remove("hidden");
-    showBtn.style.display = "none";
-  };
-}
-
-// ==========================================================
-// 🎨 Inicializar Hydra (optimizada + fade solo canvas)
-// ==========================================================
 async function runHydraCode() {
+  cleanupThreeOverlay(); // 🔹 Limpia antes de ejecutar nuevo código Hydra
+
   const container = document.getElementById("hydra-container");
   const canvas = document.getElementById("hydra-canvas");
   if (!canvas || !container) return;
@@ -269,8 +284,8 @@ async function runHydraCode() {
   await new Promise((r) => setTimeout(r, 250));
 
   const rect = container.getBoundingClientRect();
-  canvas.width = rect.width > 0 ? rect.width : window.innerWidth;
-  canvas.height = rect.height > 0 ? rect.height : window.innerHeight;
+  canvas.width = rect.width || window.innerWidth;
+  canvas.height = rect.height || window.innerHeight;
 
   if (hydra) {
     try {
@@ -288,15 +303,15 @@ async function runHydraCode() {
       makeGlobal: true,
     });
     window._hydra = hydra;
-
     hydra.setResolution(canvas.width, canvas.height);
     console.log("🎨 Hydra inicializada sin flash.");
 
-    requestAnimationFrame(() => {
+    requestAnimationFrame(async () => {
       try {
         if (code && code.length > 5) {
+          if (code.includes("THREE") || code.includes("new THREE.")) await ensureThree();
           new Function(code)();
-          console.log("🎛️ Patch Hydra ejecutado.");
+          console.log("🎛️ Patch Hydra ejecutado correctamente.");
         } else {
           osc(10, 0.1, 1.2).modulate(noise(2)).kaleid(3).out(o0);
         }
@@ -304,9 +319,7 @@ async function runHydraCode() {
         console.error("❌ Error ejecutando código Hydra:", err);
       }
 
-      setTimeout(() => {
-        canvas.style.opacity = "1.0";
-      }, 60);
+      setTimeout(() => (canvas.style.opacity = "1.0"), 60);
     });
 
     window.addEventListener("resize", () => {
@@ -376,13 +389,24 @@ function setupWindowControls(win, isMobile) {
   };
 
   header.querySelector(".close-btn").onclick = async () => {
+    cleanupThreeOverlay(); // 🔹 Limpia al cerrar
     document.querySelector('.task-btn[data-task="live-lab"]')?.remove();
     win.remove();
   };
 }
+function setupPanelToggle() {
+  const panel = document.getElementById("lab-left");
+  const toggle = document.getElementById("lab-folder-toggle");
+  if (!panel || !toggle) return;
 
+  toggle.addEventListener("click", () => {
+    const isOpen = panel.classList.toggle("open");
+    toggle.classList.toggle("active", isOpen);
+    toggle.textContent = isOpen ? "📁" : "📂";
+  });
+}
 // ==========================================================
-// 🪟 Crear ventana principal
+// 🚀 Crear ventana principal
 // ==========================================================
 async function createUI() {
   const win = document.createElement("div");
@@ -430,7 +454,8 @@ async function createUI() {
 
   document.body.appendChild(win);
 
-  if (isMobile) {
+  const isM = isMobile;
+  if (isM) {
     Object.assign(win.style, {
       position: "fixed",
       inset: "0",
@@ -447,12 +472,27 @@ async function createUI() {
     document.body.classList.add("mobile-mode");
   }
 
-  setupWindowControls(win, isMobile);
+  setupWindowControls(win, isM);
   setupPanelToggle();
-  setupHydraUI();
+
+  document.getElementById("hydra-run").onclick = () => runHydraCode();
+
+  const editor = document.getElementById("hydra-editor");
+  const hideBtn = document.getElementById("hydra-hide");
+  const showBtn = document.getElementById("hydra-show");
+
+  hideBtn.onclick = () => {
+    editor.style.display = "none";
+    showBtn.style.display = "block";
+  };
+
+  showBtn.onclick = () => {
+    editor.style.display = "flex";
+    showBtn.style.display = "none";
+  };
 
   await loadPortfolioCodes();
-  if (!isMobile) addToTaskbar("Live Lab", "🎛️");
+  if (!isM) addToTaskbar("Live Lab", "🎛️");
   bringToFront(win);
 }
 
@@ -468,5 +508,5 @@ export async function openLiveLabWindow() {
   }
   await ensureHydra();
   await createUI();
-  console.log("✅ Live Lab (Hydra + Strudel + móvil) listo.");
+  console.log("✅ Live Lab (Hydra + Strudel + Three.js + móvil) listo.");
 }
