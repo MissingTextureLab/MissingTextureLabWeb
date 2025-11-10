@@ -71,13 +71,8 @@ async function getPatchCode(item) {
 // 🎴 Cargar tarjetas desde JSON
 // ==========================================================
 async function loadPortfolioCodes() {
-      try {
-        const repo = window.location.pathname.includes("MissingTextureLabWeb")
-      ? "MissingTextureLabWeb/"
-      : "";
-
-    const baseURL = `${window.location.origin}/${repo}data/live-l-lab.json`;
-    const res = await fetch(baseURL, { cache: "no-store" });
+  try {
+    const res = await fetch("../../data/live-lab.json", { cache: "no-store" });
     if (!res.ok) throw new Error(`Error al cargar JSON (${res.status})`);
 
     portfolioCodes = await res.json();
