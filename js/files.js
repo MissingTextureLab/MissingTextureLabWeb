@@ -93,11 +93,10 @@ const filesByFolder = {
     },
     {
       category: "Audiovisual y videoarte",
-      name: "Sometimes U Can't Trust In What Seems Real",
+      name: "Sometimes U Can't Trust...",
       kind: "video",
       host: "youtube",
       url: "https://youtu.be/O80O1P7qKXg?si=ll1zQ6nGrevnqw94",
-      minTitleSize: 8.5
     },
     {
       category: "Audiovisual y videoarte",
@@ -1121,6 +1120,10 @@ function openFolder(name) {
 
   const content = document.createElement('div');
   content.className = 'window-content';
+    if (isMobile) {
+      content.style.overflowY = "auto";
+      content.style.webkitOverflowScrolling = "touch";
+  }
 
   if (!files.length) {
     // === Carpeta vacía → mostrar engine 3D “en construcción” ===
@@ -1177,14 +1180,24 @@ function openFolder(name) {
       if (link) openFile(link);
     });
 
-    content.addEventListener('dblclick', (ev) => {
-      const card = ev.target.closest('.file-card');
-      if (!card) return;
-      const file = decodeData(card.dataset.file);
-      if (!file) return;
-      if (file.kind === 'project' && Array.isArray(file.links)) return;
-      openFile(file);
-    });
+  // CLICK en card → abrir archivo
+  content.addEventListener('click', (ev) => {
+    // 1) Si se hizo click en un botón de link, no tocar nada
+    const btn = ev.target.closest('.file-link-btn');
+    if (btn) return;
+
+    // 2) Si hizo click en una card → abrir archivo
+    const card = ev.target.closest('.file-card');
+    if (!card) return;
+
+    const file = decodeData(card.dataset.file);
+    if (!file) return;
+
+    // Si un PROJECT tiene varios links → no abrir embed, dejar que el user clique el botón
+    if (file.kind === 'project' && Array.isArray(file.links) && file.links.length > 0) return;
+
+    openFile(file);
+  });
   }
 
   windowEl.appendChild(header);
@@ -1517,10 +1530,21 @@ function openImageWindow(name, imgUrl) {
   document.body.appendChild(windowEl);
 
   // Tamaño inicial ajustado a la imagen
-  windowEl.style.width = "600px";
-  windowEl.style.height = "600px";
-  windowEl.style.left = (window.innerWidth - 600) / 2 + "px";
-  windowEl.style.top = (window.innerHeight - 800) / 2 + "px";
+  if (isMobile) {
+      windowEl.style.left = "0px";
+      windowEl.style.top = "0px";
+      windowEl.style.width = "100vw";
+      windowEl.style.height = "100vh";
+  } else {
+      // =============================
+      // 🖥️ ESCRITORIO (igual que antes)
+      // =============================
+    windowEl.style.width = "600px";
+    windowEl.style.height = "600px";
+
+    /* Centrado horizontal perfecto */
+    windowEl.style.left = (window.innerWidth - 500) / 2 + "px";
+  }
 
   windowEl.style.display = "block";
   bringToFront(windowEl);
@@ -1587,4 +1611,128 @@ function openImageWindow(name, imgUrl) {
       startDrag(windowEl, e);
     }
   });
+  if (isMobile) {
+    document.body.classList.add("mobile-mode");
+
+    // 1️⃣ Viewport real siempre fiable
+    function applyMobileVH() {
+      const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      document.documentElement.style.setProperty("--real-vh", `${vh}px`);
+    }
+    applyMobileVH();
+    window.visualViewport?.addEventListener("resize", applyMobileVH);
+
+    // 2️⃣ Escritorio a fullscreen sin scroll lateral
+    const desktop = document.getElementById("desktop");
+    if (desktop) {
+      Object.assign(desktop.style, {
+        width: "100vw",
+        height: "100vh",
+        position: "fixed",
+        inset: "0",
+        overflow: "hidden",
+        touchAction: "none"
+      });
+    }
+
+    // 3️⃣ Ocultar asistente si aparece
+    const assistant = document.querySelector(".window-assistant");
+    if (assistant) assistant.style.display = "none";
+
+    // 4️⃣ En móvil: TODO abre con un solo toque
+    document.addEventListener(
+      "click",
+      (e) => {
+        const card = e.target.closest(".file-card");
+        const btn = e.target.closest(".file-link-btn");
+        const icon = e.target.closest(".icon");
+
+        // 👉 Botón de link en proyectos
+        if (btn) {
+          const link = decodeData(btn.dataset.link);
+          if (link) openFile(link);
+          return;
+        }
+
+        // 👉 Tarjeta: abre archivo directamente
+        if (card) {
+          const file = decodeData(card.dataset.file);
+          if (file) openFile(file);
+          return;
+        }
+
+        // 👉 Icono del escritorio
+        if (icon) {
+          const name = icon.textContent.trim();
+          const folder = folders.find((f) => f.name === name);
+          if (!folder) return;
+
+          // Apps
+          if (folder.type === "app" && typeof window[folder.action] === "function") {
+            window[folder.action]();
+            return;
+          }
+
+          // Enlaces
+          if (folder.type === "link" && folder.url) {
+            window.open(folder.url, "_blank");
+            return;
+          }
+
+          // Carpeta normal
+          openFolder(name);
+        }
+      },
+      { passive: true }
+    );
+
+    // 5️⃣ Drag profesional para ventanas (solo header)
+    document.addEventListener(
+      "touchstart",
+      (e) => {
+        const header = e.target.closest(".window-header");
+        if (!header || e.target.closest(".window-buttons")) return;
+
+        const win = header.parentElement;
+        bringToFront(win);
+
+        const rect = win.getBoundingClientRect();
+        const offsetX = e.touches[0].clientX - rect.left;
+        const offsetY = e.touches[0].clientY - rect.top;
+
+        function onMove(ev) {
+          ev.preventDefault();
+          const x = ev.touches[0].clientX - offsetX;
+          const y = ev.touches[0].clientY - offsetY;
+
+          const maxX = window.innerWidth - rect.width;
+          const maxY = window.innerHeight - rect.height - 40;
+
+          win.style.left = Math.max(0, Math.min(maxX, x)) + "px";
+          win.style.top = Math.max(0, Math.min(maxY, y)) + "px";
+        }
+
+        function onEnd() {
+          document.removeEventListener("touchmove", onMove);
+          document.removeEventListener("touchend", onEnd);
+        }
+
+        document.addEventListener("touchmove", onMove, { passive: false });
+        document.addEventListener("touchend", onEnd);
+      },
+      { passive: true }
+    );
+
+    // 6️⃣ Mejor soporte para ventanas fullscreen (apps VR, CV, Lab)
+    window.addEventListener("resize", () => {
+      document.querySelectorAll(".window").forEach((win) => {
+        if (win.classList.contains("maximized")) {
+          win.style.width = "100vw";
+          win.style.height = "calc(var(--real-vh) - 40px)";
+          win.style.left = "0";
+          win.style.top = "0";
+        }
+      });
+    });
+  }
 }

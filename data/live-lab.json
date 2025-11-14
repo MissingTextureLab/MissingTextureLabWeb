@@ -14,6 +14,12 @@
     "path": "data/patches/hydra/snow.js"
   },
   {
+    "title": "Pixel_Camera",
+    "type": "hydra", 
+    "thumb": "icons/hydra.png",
+    "path": "data/patches/hydra/pixelcam.js"
+  },
+  {
     "title": "Celular_Camera",
     "type": "hydra", 
     "thumb": "icons/hydra.png",

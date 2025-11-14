@@ -70,8 +70,8 @@ function bindStartMenu() {
   btn.addEventListener('click', () => {
     sm.style.display = (sm.style.display === 'flex') ? 'none' : 'flex';
   });
-  document.getElementById('settings')?.addEventListener('click', () => {
-    alert('⚙️ Configuración del sistema\n\n• Tema visual\n• Tamaño de iconos\n• Comportamiento del escritorio');
+  document.getElementById('Repo de la Web!')?.addEventListener('click', () => {
+    window.open('https://github.com/MissingTextureLab/MissingTextureLabWeb', '_blank');
     sm.style.display = 'none';
   });
   document.getElementById('shutdown')?.addEventListener('click', () => {

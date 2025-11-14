@@ -119,10 +119,35 @@ export function openProperties(folder) {
   content.className = 'window-content';
   content.innerHTML = `
     <div class="properties-content">
-      <p><strong>Tipo:</strong> Carpeta</p>
-      <p><strong>Elementos:</strong> ${folder.files?.length || 0}</p>
-      <p><strong>Posición:</strong> X=${folder.x ?? '—'}, Y=${folder.y ?? '—'}</p>
-      <p><strong>Última modificación:</strong> ${new Date().toLocaleString()}</p>
+
+      <!-- Icono bonito -->
+      <img src="${folder.icon}" class="properties-icon" alt="icono">
+
+      <!-- Sección 1 -->
+      <div class="properties-section">
+        <h4>Información general</h4>
+        <p><strong>Nombre:</strong> ${folder.name}</p>
+        <p><strong>Tipo:</strong> Carpeta</p>
+      </div>
+
+      <div class="properties-divider"></div>
+
+      <!-- Sección 2 -->
+      <div class="properties-section">
+        <h4>Ubicación en el escritorio</h4>
+        <p><strong>Posición X:</strong> ${folder.x ?? '—'}</p>
+        <p><strong>Posición Y:</strong> ${folder.y ?? '—'}</p>
+      </div>
+
+      <div class="properties-divider"></div>
+
+      <!-- Sección 3 -->
+      <div class="properties-section">
+        <h4>Detalles del sistema</h4>
+        <p><strong>Última modificación:</strong> ${new Date().toLocaleString()}</p>
+        <p><strong>ID interna:</strong> ${folder.name.toLowerCase().replace(/\s+/g,'-')}</p>
+      </div>
+
     </div>
   `;
 

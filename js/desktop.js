@@ -6,6 +6,7 @@ initAssistant();
 initFiles();
 
 const desktop = document.getElementById('desktop');
+
 let selectedFolder = null;
 
 export function renderDesktop() {
@@ -39,6 +40,7 @@ export function renderDesktop() {
 
     desktop.appendChild(icon);
   });
+  
 }
 
 // ❌ Eliminado el listener global “desktop.addEventListener('dblclick', …)”

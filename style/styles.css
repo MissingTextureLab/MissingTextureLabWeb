@@ -389,28 +389,75 @@ body::before{
   backdrop-filter: blur(10px);
 }
 
-/* Ventana de propiedades */
-.properties-section{
-  margin-bottom: 16px;
-  padding: 12px;
-  background: rgba(168, 85, 247, 0.05);
-  border: 1px solid rgba(168, 85, 247, 0.2);
+.properties-section {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  background: rgba(168, 85, 247, 0.06);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+  transition: background .25s ease, border-color .25s ease;
 }
-.properties-section h4{
+
+/* Efecto hover suave */
+.properties-section:hover {
+  background: rgba(168, 85, 247, 0.12);
+  border-color: rgba(168, 85, 247, 0.45);
+}
+
+/* Títulos de sección */
+.properties-section h4 {
   color: var(--frutiger-purple);
-  margin-bottom: 8px;
+  margin: 0 0 10px 0;
   font-size: 13px;
+  letter-spacing: .3px;
+  font-weight: 600;
 }
-.properties-section p{
-  margin: 4px 0;
-  font-size: 11px;
+
+/* Líneas de información */
+.properties-section p {
+  margin: 3px 0;
+  font-size: 12px;
   color: var(--frutiger-dark);
+  opacity: 0.85;
+  display: flex;
+  justify-content: space-between;
 }
-.properties-icon{
-  width: 48px;
-  height: 48px;
-  margin-bottom: 12px;
-  filter: drop-shadow(0 2px 8px var(--frutiger-shadow));
+
+/* Etiqueta más marcada */
+.properties-section p strong {
+  font-weight: 600;
+  opacity: 0.95;
+}
+
+/* Ícono superior */
+.properties-icon {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 14px;
+  filter: drop-shadow(0 3px 10px var(--frutiger-shadow));
+  transform: translateZ(0); /* antialiasing */
+  transition: transform .25s ease;
+}
+
+/* Pequeño feedback visual */
+.properties-icon:hover {
+  transform: scale(1.05);
+}
+
+/* Línea separadora elegante entre secciones */
+.properties-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(168, 85, 247, 0.25),
+    transparent
+  );
+  margin: 14px 0;
+  opacity: 0.6;
 }
 
 /* Scrollbar personalizada */
@@ -1262,4 +1309,65 @@ body.dragging .icon {
   height: auto;
   display: block;
   user-select: none;
+}
+/* ================================================
+    📱 CURRÍCULUM - FULLSCREEN + SCROLL VERTICAL
+   ================================================ */
+@media (max-width: 1024px) {
+
+  .window-image {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: #000 !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    z-index: 999999 !important;
+  }
+
+  .window-image .window-header {
+    height: 48px !important;
+    flex-shrink: 0;
+    background: rgba(0,0,0,0.85) !important;
+  }
+
+  .window-image .window-content {
+    flex: 1 !important;
+    overflow-y: auto !important;
+
+    /* ⭐⭐ CLAVE PARA QUE NO SE VEA EL HUECO ⭐⭐ */
+    display: flex !important;
+    justify-content: center;
+    align-items: flex-start;
+    background: #000 !important;
+    padding: 0 !important;
+  }
+
+  .img-container {
+    width: 100%;
+    height: auto;
+
+    /* ⭐⭐ ESTO HACE QUE EL CONTENEDOR SE ADAPTE A LA ALTURA REAL ⭐⭐ */
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    background: #000 !important;
+  }
+
+  .img-viewer {
+    width: 100% !important;
+
+    /* ⭐⭐ ESTO EVITA EL HUECO DE ABAJO DE FORMA DEFINITIVA ⭐⭐ */
+    height: auto !important;
+    min-height: calc(100vh - 48px) !important;
+
+    object-fit: contain !important;
+
+    touch-action: pinch-zoom !important;
+    transform-origin: center center;
+    -webkit-user-drag: none;
+  }
 }

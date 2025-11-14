@@ -1,6 +1,29 @@
 // movement.js — optimización de arrastre y cuadrícula dinámica
 import { folders, saveFolders, GRID_SIZE, GRID_PADDING } from '../data.js';
 
+// 📌 ZOOM FIX — Detectar zoom del navegador
+let lastZoom = window.devicePixelRatio;
+function checkZoomChange() {
+  const currentZoom = window.devicePixelRatio;
+  if (currentZoom !== lastZoom) {
+    lastZoom = currentZoom;
+    arrangeIcons(); // ← recolocar iconos automáticamente
+  }
+}
+
+const customOrder = [
+  "Sobre mí",
+  "Proyectos",
+  "Currículum",
+  "Lab",
+  "Futuro",
+  "Ajustes",
+  "Privado",
+  "Instagram",
+  "Github",
+  "Youtube",
+];
+
 // referencias y estado local
 const desktop = () => document.getElementById('desktop');
 
@@ -129,7 +152,7 @@ export function highlightNearestGrid(clientX, clientY) {
   }
 }
 
-// ——— Arrastre y soltar con rAF (manteniendo la mecánica original) ———
+// ——— Arrastre y soltar con rAF ———
 function bindDesktopEventsOnce() {
   if (desktopEventsBound) return;
   desktopEventsBound = true;
@@ -141,7 +164,6 @@ function bindDesktopEventsOnce() {
     const icon = e.target.closest('.icon');
     if (!icon) return;
 
-    // aseguramos que el cursor "agarre" el centro
     const rect = icon.getBoundingClientRect();
     const offsetX = rect.width / 2;
     const offsetY = rect.height / 2;
@@ -181,16 +203,15 @@ function bindDesktopEventsOnce() {
     draggedIcon = null;
     hideGrid();
   });
+
   desktop().addEventListener('click', (e) => {
     const icon = e.target.closest('.icon');
 
-    // Si clicas en el fondo (no en un icono ni en una ventana)
     if (!icon) {
       desktop().querySelectorAll('.icon.selected').forEach(el => el.classList.remove('selected'));
       return;
     }
 
-    // Si clicas en un icono: marcarlo y desmarcar los demás
     desktop().querySelectorAll('.icon.selected').forEach(el => el.classList.remove('selected'));
     icon.classList.add('selected');
   });
@@ -198,7 +219,9 @@ function bindDesktopEventsOnce() {
 
 // ——— Reorganizar iconos sin re-render completo ———
 export function arrangeIcons() {
-  folders.sort((a, b) => a.name.localeCompare(b.name));
+  folders.sort((a, b) => {
+    return customOrder.indexOf(a.name) - customOrder.indexOf(b.name);
+  });
   let x = 0, y = 0;
   const rect = desktop().getBoundingClientRect();
   const maxRows = Math.floor((rect.height - GRID_PADDING * 2) / GRID_SIZE);
@@ -219,8 +242,15 @@ export function arrangeIcons() {
   saveFolders();
 }
 
-// Inicialización
 document.addEventListener('DOMContentLoaded', () => {
   rebuildPosIndex();
   bindDesktopEventsOnce();
+
+  // 📌 ZOOM FIX — Comprobar zoom cada 200ms
+  setInterval(checkZoomChange, 200);
+
+  // 📌 EJECUTAR AL INICIO SI EL ZOOM ES DIFERENTE A 100%
+  if (window.devicePixelRatio !== 1) {
+    arrangeIcons();
+  }
 });

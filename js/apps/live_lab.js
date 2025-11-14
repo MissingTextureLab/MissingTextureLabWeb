@@ -1,11 +1,17 @@
-// ==========================================================
-// 🎛️ live_lab_optimized.js — Hydra + Strudel + Three.js con soporte móvil
-// ==========================================================
+// CORE
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+
+// MATH / NOISE
 import { SimplexNoise } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/math/SimplexNoise.js";
+
+// POSTPROCESSING
 import { EffectComposer } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/postprocessing/UnrealBloomPass.js";
+
+// TEXT / LOADERS
+import { FontLoader } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/FontLoader.js";
+import { TextGeometry } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/geometries/TextGeometry.js";
 
 import { bringToFront, addToTaskbar } from "../windows.js";
 
@@ -63,6 +69,8 @@ async function ensureThree() {
   window.EffectComposer = EffectComposer;
   window.RenderPass = RenderPass;
   window.UnrealBloomPass = UnrealBloomPass;
+  window.FontLoader = FontLoader;
+  window.TextGeometry = TextGeometry;
   console.log("✅ Three.js y dependencias globales listas (desde import ESM).");
 }
 
