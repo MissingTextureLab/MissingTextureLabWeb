@@ -23,7 +23,7 @@ if (isMobile) {
   folders = [
     { name: "Sobre mí",    icon: "icons/FolderMipcl.png",      type: "folder" },
     { name: "Proyectos",   x: 1, y: 0, icon: "icons/FolderVirtual.png",    type: "folder" },
-    { name: "Currículum",   icon: "icons/Foldertext.png",    type: "app", action: "openImageWindow"},
+    { name: "Currículum",   icon: "icons/foldertext.png",    type: "app", action: "openImageWindow"},
     { name: "Lab",         icon: "icons/FolderCode.png",       type: "app", action: "openLiveLabWindow" },
     { name: "Futuro",      icon: "icons/FolderRandom.png",     type: "folder" },
     // 🌐 Enlaces externos móviles también
