@@ -219,9 +219,18 @@ function bindDesktopEventsOnce() {
 
 // ——— Reorganizar iconos sin re-render completo ———
 export function arrangeIcons() {
+  // 1. ordenar por customOrder, dejando los que no están al final
   folders.sort((a, b) => {
-    return customOrder.indexOf(a.name) - customOrder.indexOf(b.name);
+    const ia = customOrder.indexOf(a.name);
+    const ib = customOrder.indexOf(b.name);
+
+    if (ia === -1 && ib === -1) return a.name.localeCompare(b.name);
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
   });
+
+  // 2. recalcular posiciones en cuadrícula
   let x = 0, y = 0;
   const rect = desktop().getBoundingClientRect();
   const maxRows = Math.floor((rect.height - GRID_PADDING * 2) / GRID_SIZE);
@@ -229,28 +238,55 @@ export function arrangeIcons() {
   for (const f of folders) {
     f.x = x;
     f.y = y;
+
     const el = desktop().querySelector(`.icon[data-name="${CSS.escape(f.name)}"]`);
     if (el) {
-      el.style.left = `${GRID_PADDING + f.x * GRID_SIZE}px`;
-      el.style.top  = `${GRID_PADDING + f.y * GRID_SIZE}px`;
+      el.style.left = `${GRID_PADDING + x * GRID_SIZE}px`;
+      el.style.top  = `${GRID_PADDING + y * GRID_SIZE}px`;
     }
+
     y++;
     if (y >= maxRows) { y = 0; x++; }
   }
 
   rebuildPosIndex();
-  saveFolders();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  rebuildPosIndex();
+  // 1️⃣ Siempre ordenar por customOrder
+  arrangeIcons();
+
+  // 2️⃣ Solo después cargar posiciones guardadas
+  try {
+    const saved = JSON.parse(localStorage.getItem('folders'));
+    if (Array.isArray(saved)) {
+      // fusionar datos antiguos con nuevos iconos
+      for (const f of folders) {
+        const old = saved.find(s => s.name === f.name);
+        if (old) {
+          f.x = old.x ?? f.x;
+          f.y = old.y ?? f.y;
+        }
+      }
+
+      // aplicar las posiciones guardadas en pantalla
+      for (const f of folders) {
+        const el = document.querySelector(`.icon[data-name="${CSS.escape(f.name)}"]`);
+        if (el) {
+          el.style.left = `${GRID_PADDING + f.x * GRID_SIZE}px`;
+          el.style.top =  `${GRID_PADDING + f.y * GRID_SIZE}px`;
+        }
+      }
+
+      rebuildPosIndex();
+    }
+  } catch(e) {
+    console.warn("localStorage corrupto, ignorado");
+  }
+
+  // 3️⃣ activar eventos
   bindDesktopEventsOnce();
 
-  // 📌 ZOOM FIX — Comprobar zoom cada 200ms
+  // 4️⃣ fix zoom
   setInterval(checkZoomChange, 200);
-
-  // 📌 EJECUTAR AL INICIO SI EL ZOOM ES DIFERENTE A 100%
-  if (window.devicePixelRatio !== 1) {
-    arrangeIcons();
-  }
 });
