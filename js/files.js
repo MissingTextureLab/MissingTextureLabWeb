@@ -1510,7 +1510,7 @@ function openPDFWindow(name, pdfUrl) {
   `;
 
   // === VISOR PDF.js LOCAL ===
-  const viewer = "/pdfjs/web/viewer.html";
+  const viewer = "pdfjs/web/viewer.html";
 
   const content = document.createElement("div");
   content.className = "window-content pdf-container";
