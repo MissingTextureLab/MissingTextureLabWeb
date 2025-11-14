@@ -2,7 +2,7 @@ export let folders = [
 
   { name: "Sobre mí",    x: 0, y: 0, icon: "icons/FolderMipcl.png",      type: "folder" },
   { name: "Proyectos",   x: 1, y: 0, icon: "icons/FolderVirtual.png",    type: "folder" },
-  { name: "Educación",   x: 2, y: 0, icon: "icons/foldertext.png",       type: "folder" },
+  { name: "Currículum",   x: 2, y: 0, icon: "icons/foldertext.png",       type: "app", action: "openEducationPDF"},
 
   { name: "Lab",         x: 0, y: 3, icon: "icons/FolderCode.png",       type: "app", action: "openLiveLabWindow" },
   { name: "Futuro",      x: 0, y: 4, icon: "icons/FolderRandom.png",     type: "folder" },
@@ -22,7 +22,7 @@ const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 if (isMobile) {
   folders = [
     { name: "Sobre mí",    icon: "icons/FolderMipcl.png",      type: "folder" },
-    { name: "Proyectos",   icon: "icons/FolderVirtual.png",    type: "folder" },
+    { name: "Currículum",   icon: "icons/FolderVirtual.png",    type: "app", action: "openEducationPDF"},
     { name: "Educación",   icon: "icons/foldertext.png",       type: "folder" },
     { name: "Lab",         icon: "icons/FolderCode.png",       type: "app", action: "openLiveLabWindow" },
     { name: "Futuro",      icon: "icons/FolderRandom.png",     type: "folder" },
@@ -120,3 +120,33 @@ export function updateFolderPosition(name, x, y) {
 // Configuración de cuadrícula
 export const GRID_SIZE = 100;
 export const GRID_PADDING = 20;
+
+export async function openEducationPDF() {
+
+  // Crea ventana base (usa tu sistema interno)
+  const win = createWindow({
+    title: "Currículum – Educación",
+    width: 900,
+    height: 1100,
+    resizable: true,
+  });
+
+  // Contenido de la ventana = visor PDF
+  win.content.innerHTML = `
+    <div style="
+      width: 100%; 
+      height: 100%; 
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <iframe 
+        src="./assets/CV Andrés Educativo-Artístico-Técnico (1).pdf" 
+        style="width:100%; height:100%; border:none;"
+      ></iframe>
+    </div>
+  `;
+}
+
+window.openEducationPDF = openEducationPDF;

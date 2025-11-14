@@ -253,8 +253,15 @@ function populateCards() {
     card.className = "lab-card";
 
     let tagsHTML = `<small class="tag ${item.type}">${item.type.toUpperCase()}</small>`;
+
+    // 🔹 Añadir etiqueta THREE si aplica
     if (item.usesThree || item.type === "hydra-three") {
       tagsHTML += `<small class="tag three">THREE</small>`;
+    }
+
+    // 🔹 Añadir etiqueta HYDRA solo si usaHydra = true y NO es de tipo hydra
+    if (item.usesHydra && item.type !== "hydra" && item.type !== "hydra-three") {
+      tagsHTML += `<small class="tag hydra">HYDRA</small>`;
     }
 
     card.innerHTML = `

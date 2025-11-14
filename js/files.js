@@ -918,6 +918,12 @@ function buildFileCard(file){
 
 // ============ openFolder (render por categorías + delegación de eventos) ============
 function openFolder(name) {
+
+  if (name === "Currículum") {
+  // 👉 Aquí pon la URL real de tu PDF
+  openPDFWindow("Currículum", "./assets/cv.pdf");
+  return;
+}
   
 
   // Si ya existe la ventana, solo la traemos al frente
@@ -946,6 +952,13 @@ function openFolder(name) {
       window.openLiveLabWindow();
       return; // no continuar con el resto
     }
+    if (name === "Currículum") {
+      if (typeof window.openEducationPDF === "function") {
+        window.openEducationPDF();
+        return;
+      }
+    }
+
 
     // Si no está cargada, mostramos aviso y salimos
     console.warn('⚠ No se pudo abrir el Live Lab: openLiveLabWindow no encontrada');
@@ -1001,6 +1014,13 @@ function openFolder(name) {
     </div>
   </div>
 `;
+
+  if (name === "Currículum") {
+    if (typeof window.openEducationPDF === "function") {
+      window.openEducationPDF();
+      return;
+    }
+  }
 
     windowEl.appendChild(header);
     windowEl.appendChild(content);
@@ -1339,9 +1359,25 @@ if (isMobile) {
       return;
     }
 
-    // 👉 Si pulsa un icono del escritorio
     if (icon) {
       const name = icon.textContent.trim();
+      const folder = folders.find(f => f.name === name);
+
+      if (!folder) return;
+
+      // 👉 Si es una APP → ejecutar su acción
+      if (folder.type === "app" && typeof window[folder.action] === "function") {
+        window[folder.action]();  
+        return;
+      }
+
+      // 👉 Si es LINK → abrir
+      if (folder.type === "link" && folder.url) {
+        window.open(folder.url, "_blank");
+        return;
+      }
+
+      // 👉 Carpeta normal
       openFolder(name);
     }
   }, { passive: true });
@@ -1434,3 +1470,135 @@ function fixLiveLabWindowSize() {
 const labObserver = new MutationObserver(() => fixLiveLabWindowSize());
 labObserver.observe(document.body, { childList: true, subtree: true });
 window.addEventListener('resize', fixLiveLabWindowSize);
+
+
+// ===============================
+//  PDF WINDOW — VERSIÓN FINAL (PDF.js LOCAL)
+// ===============================
+
+
+
+function openPDFWindow(name, pdfUrl) {
+  const key = normalizeName(name);
+  const winId = `win-${key}`;
+  let windowEl = document.getElementById(winId);
+
+  // Si ya existe → traer al frente
+  if (windowEl) {
+    windowEl.style.display = "block";
+    bringToFront(windowEl);
+    return;
+  }
+
+  // === CREAR VENTANA ===
+  windowEl = document.createElement("div");
+  windowEl.className = "window window-pdf";
+  windowEl.id = winId;
+  windowEl.dataset.task = key;
+  let maximized = false;
+
+  // === HEADER ===
+  const header = document.createElement("div");
+  header.className = "window-header";
+  header.innerHTML = `
+    <span>${name}</span>
+    <div class="window-buttons">
+      <span class="min-btn">_</span>
+      <span class="max-btn">□</span>
+      <span class="close-btn">✕</span>
+    </div>
+  `;
+
+  // === VISOR PDF.js LOCAL ===
+  const viewer = "/pdfjs/web/viewer.html";
+
+  const content = document.createElement("div");
+  content.className = "window-content pdf-container";
+  content.innerHTML = `
+    <iframe
+      class="pdf-frame"
+      src="${viewer}?file=${pdfUrl}#zoom=page-width"
+    ></iframe>
+  `;
+
+  windowEl.appendChild(header);
+  windowEl.appendChild(content);
+  document.body.appendChild(windowEl);
+
+  // ======================================
+  //   TAMAÑO INICIAL EXACTO DEL PDF
+  // ======================================
+  const aspect = 1 / 1.414; // A4 vertical
+  const targetH = Math.floor(window.innerHeight * 0.85);
+  const targetW = Math.floor(targetH * aspect);
+
+  const W = Math.min(targetW, window.innerWidth - 40);
+  const H = Math.min(targetH, window.innerHeight - 60);
+
+  windowEl.style.width  = W + "px";
+  windowEl.style.height = H + "px";
+  windowEl.style.left   = (window.innerWidth - W) / 2 + "px";
+  windowEl.style.top    = (window.innerHeight - H) / 2 + "px";
+
+  windowEl.style.display = "block";
+  bringToFront(windowEl);
+  addToTaskbar(name);
+
+  // ======================================
+  //   BOTONES
+  // ======================================
+  header.querySelector(".close-btn").onclick = () => {
+    windowEl.remove();
+    const taskBtn = document.querySelector(`.task-btn[data-task="${key}"]`);
+    if (taskBtn) taskBtn.remove();
+  };
+
+  header.querySelector(".min-btn").onclick = () => {
+    windowEl.style.display = "none";
+  };
+
+  header.querySelector(".max-btn").onclick = () => {
+    const iframe = windowEl.querySelector(".pdf-frame");
+
+    if (!maximized) {
+      // Guardar estado
+      windowEl.dataset.prev = JSON.stringify({
+        left: windowEl.style.left,
+        top: windowEl.style.top,
+        width: windowEl.style.width,
+        height: windowEl.style.height
+      });
+
+      // Pantalla completa
+      windowEl.style.left = "0";
+      windowEl.style.top = "0";
+      windowEl.style.width = window.innerWidth + "px";
+      windowEl.style.height = (window.innerHeight - 40) + "px";
+
+      // ► Zoom REAL (page-fit)
+      const Z = window.PDF_MAX_ZOOM || 120;
+      iframe.src =
+      `${viewer}?file=${pdfUrl}#zoom=${Z}&v=${Date.now()}`;
+
+    } else {
+      // Restaurar tamaño original
+      const prev = JSON.parse(windowEl.dataset.prev);
+      windowEl.style.left = prev.left;
+      windowEl.style.top = prev.top;
+      windowEl.style.width = prev.width;
+      windowEl.style.height = prev.height;
+
+      // ► Zoom normal (page-width)
+      iframe.src =
+        `${viewer}?file=${pdfUrl}#zoom=page-width&v=${Date.now()}`;
+      maximized = false;
+    }
+  };
+
+  // === DRAG ===
+  header.addEventListener("mousedown", (e) => {
+    if (!isMobile && !e.target.closest(".window-buttons")) {
+      startDrag(windowEl, e);
+    }
+  });
+}

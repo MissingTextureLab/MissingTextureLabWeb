@@ -19,14 +19,18 @@
 
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Cascadia Code',monospace;}
 
-body{
+body {
   position: relative;
-  background: 
-      radial-gradient(circle at 20% 30%, rgba(168, 85, 247, 0.3) 0%, transparent 50%),
-      radial-gradient(circle at 80% 70%, rgba(6, 182, 212, 0.2) 0%, transparent 50%),
-      linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 30%, #cbd5e1 100%);
-  height:100vh;
-  overflow:hidden;
+background:
+  radial-gradient(circle at 20% 30%, rgba(168, 85, 247, 0.15) 0%, transparent 50%),
+  radial-gradient(circle at 80% 70%, rgba(6, 182, 212, 0.10) 0%, transparent 50%),
+  linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 30%, #cbd5e1 100%);
+  
+  min-height: 100vh;
+  height: auto;
+  padding: 60px 0;         /* 🟣 GRAN espacio arriba y abajo */
+  overflow-x: hidden;
+  overflow-y: auto;        /* evita cortes */
 }
 
 body::before{
@@ -126,8 +130,7 @@ body::before{
   0%, 100% { opacity: 0.7; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.02); }
 }
-
-.window{
+.window {
   position:absolute;
   background: linear-gradient(135deg, var(--frutiger-white) 0%, var(--chrome-silver) 100%);
   border: 1px solid var(--frutiger-glass-border);
@@ -136,7 +139,9 @@ body::before{
   min-width:300px;
   min-height:200px;
   resize:both;
-  overflow:auto;
+
+  overflow: visible;       /* ← ANTES auto — ahora NO corta nada */
+
   box-shadow: 
       0 20px 40px var(--frutiger-shadow),
       0 0 0 1px rgba(255, 255, 255, 0.5);
@@ -185,8 +190,8 @@ body::before{
   left: 0;
   right: 0;
   bottom: 0;
-  overflow-y: auto; /* scroll solo aquí */
-  overflow-x: hidden;
+  overflow-x: visible !important;
+  overflow-y: auto;
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
   padding: 20px;
@@ -639,94 +644,147 @@ body::before{
 
 
 
-
-.file-grid{
-  display:grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap:14px;
-}
-
-/* Tarjeta: altura depende de la escala, no hay animación de layout */
-.file-card{
-  --base-w: 220;          /* ancho de diseño en px (ajústalo si quieres) */
-  --base-h: 220;          /* alto  de diseño en px (ajústalo si quieres) */
-  --scale: 1;
-  width: 100%;
-  height: calc(var(--base-h) * var(--scale) * 1px);
-  overflow: hidden;
-  background: rgba(168,85,247,0.06);
-  border: 1px solid rgba(168,85,247,0.18);
-  cursor: pointer;
-  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
-  will-change: transform; /* hover suave (no afecta layout) */
-}
-.file-card:hover{
-  transform: translateY(-2px);
-  box-shadow: 0 8px 22px var(--frutiger-shadow);
-  background: rgba(168,85,247,0.12);
-}
-
-/* Contenido “maqueta” a tamaño base y se escala todo junto */
-.file-card-inner{
-  width: calc(var(--base-w) * 1px);
-  height: calc(var(--base-h) * 1px);
-  transform: scale(var(--scale));
-  transform-origin: top left;
+/* grid */
+.file-grid {
   display: grid;
-  grid-template-rows: 136px 1fr auto; /* thumb | meta | links (puedes afinar) */
-  gap: 8px;
-  padding: 10px;                       /* padding también escala */
-  box-sizing: border-box;
-}
-
-/* Bloques internos: se mantienen proporciones al escalar */
-.file-thumb-wrap{
-  overflow:hidden;
-  background: rgba(0,0,0,.06);
-}
-.file-thumb{ width:100%; height:100%; object-fit:cover; display:block; }
-
-.file-meta{ display:flex; flex-direction:column; gap:6px; min-height:0; }
-.file-name{
+  grid-template-columns: repeat(auto-fill, minmax(260px,1fr));
+  gap: 32px;             /* separa aún más las columnas */
+  padding: 10px 6px;     /* evita pegarlas al borde de la ventana */
   overflow: visible;
-  text-overflow: clip;  /* o 'ellipsis' si quieres … */
-  /* EJEMPLO de base; si ya lo tienes, no lo dupliques */
-  font-size: 40px;
-  font-weight: 600;    /* opcional, para más presencia */
-  line-height: 1.2;    /* compacto */
-  white-space: nowrap; /* fuerza a que quede en una sola línea */
 }
 
-.file-links{ display:flex; flex-wrap:wrap; gap:6px; }
-.file-links:empty{ display:none; }
+/* tarjeta */
+.file-card {
+  position: relative;
+  height: 340px;             /* +20px de aire total */
+  padding: 18px;             /* más espacio interno */
+  display: flex;
+  flex-direction: column;
+  gap: 16px;                 /* separa miniatura + texto */
 
-/* Si no hay links, la miniatura gana altura (alineando siempre por escala) */
-.file-card.no-links .file-card-inner{
-  grid-template-rows: 168px 1fr; /* thumb más alta + meta; sin fila de links */
-}
-
-.file-link-btn{
-  padding:3px 6px; font-size:11px; font-weight:600;
-  border:1px solid var(--frutiger-light);
   background: rgba(168,85,247,0.08);
+  border: 1px solid rgba(168,85,247,0.20);
+
+  perspective: 1100px;
+  transform-style: preserve-3d;
+
+  margin: 12px;          /* DA aire real alrededor */
+  overflow: visible;     /* evitar cortes de glow */
+  transition: .28s;
+}
+
+/* wrapper que nunca se deforma */
+.file-card-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;                 /* MÁS separación título/subtitulo */
+  position: relative;
+  z-index: 2;                /* evita mezclarse con el glow */
+}
+
+/* hover 3D */
+.file-card:hover {
+  transform: translateY(-8px) scale(1.015) rotateX(6deg) rotateY(-5deg);
+  background: rgba(168,85,247,0.15);
+  box-shadow:
+    0 12px 28px rgba(109,40,217,.20),
+    0 0 18px rgba(168,85,247,.25),
+    inset 0 0 14px rgba(255,255,255,.10);
+}
+
+/* borde brillante */
+.file-card::before {
+  content: "";
+  position: absolute;
+  inset: -4px;               /* ← AÑADE ESPACIO para que NO se corte el glow */
+  border: 0px solid rgba(168,85,247,.25);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateZ(35px);
+  transition: .28s;
+}
+.file-card:hover::before {
+  opacity: 1;
+}
+
+/* miniatura fija */
+.file-thumb-wrap {
+  width: 100%;
+  height: 170px;             /* +10px de altura, más equilibrado */
+  background: rgba(0,0,0,.1);
+  border: 1px solid rgba(168,85,247,0.15);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.file-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* texto */
+.file-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 10px;                 /* separación interna más clara */
+  overflow: hidden;
+}
+
+/* título 2 líneas */
+.file-name {
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.25;
   color: var(--frutiger-dark);
-  cursor:pointer; border-radius:0;
-  transition: background .2s ease, color .2s ease;
-  display:flex; align-items:center; gap:4px;
-}
-.file-link-btn:hover{ background: var(--frutiger-light); color:#fff; }
 
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* subtítulo 2 líneas */
 .file-subtitle {
-  line-height: 1.2;
-  opacity: .8;
-  margin-top: 2px;
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip; /* recorte elegante si no cabe */
+  font-size: 15px;
+  opacity: 0.75;
+  line-height: 1.35;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.file-subtitle:empty { display: none; }
+
+/* links */
+.file-links {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(168,85,247,0.18);
+  padding-top: 10px;
 }
 
-.file-subtitle:empty { display: none; }
-/* IMPORTANTE: no definas otros height/min-height en .file-card más abajo */
+.file-link-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--frutiger-light);
+  background: rgba(168,85,247,0.1);
+  color: var(--frutiger-dark);
+  transition: .2s;
+}
+.file-link-btn:hover {
+  background: var(--frutiger-light);
+  color: white;
+}
+
+/* sin links = más baja */
+.file-card.no-links { height: 300px; }
 
 
 
@@ -740,11 +798,13 @@ body::before{
 }
 .window.window-media .window-content{
   flex:1;
-  padding:0;
+  padding:20;
   background:#000;
   backdrop-filter:none;
   min-height:0;            /* ← clave para que el iframe pueda llenar */
 }
+
+
 
 /* Wrapper que rellena toda la ventana */
 .embed-fill{ width:100%; height:100%; }
@@ -1180,4 +1240,40 @@ body.dragging .icon {
 @keyframes ucPulse {
   0%, 100% { text-shadow: 0 0 6px rgba(14,165,233,0.5), 0 0 12px rgba(168,85,247,0.4); }
   50% { text-shadow: 0 0 12px rgba(14,165,233,0.9), 0 0 20px rgba(168,85,247,0.7); }
+}
+
+/* Ventana PDF */
+.window-pdf .window-content {
+  background: #1e1e1e;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: auto;
+  padding: 10px;
+}
+
+/* Lienzo PDF */
+.pdf-canvas {
+  display: block;
+  background: white;
+  box-shadow: 0 0 16px rgba(0,0,0,0.35);
+  margin: 0 auto;
+  border-radius: 4px;
+}
+/* Contenedor del PDF: solo scroll vertical */
+/* Contenedor: ocupa todo, solo scroll vertical */
+.pdf-container {
+  padding: 0;
+  margin: 0;
+  overflow-y: auto;
+  overflow-x: hidden !important;
+  background: #111;
+}
+
+/* El iframe debe ocupar SIEMPRE el 100% de ancho y alto */
+.pdf-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
 }

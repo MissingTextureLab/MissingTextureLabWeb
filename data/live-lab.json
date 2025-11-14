@@ -71,7 +71,8 @@
     "title": "pixelate_crush",
     "type": "strudel",
     "thumb": "icons/wave.png",
-    "path": "data/patches/strudel/pixelate_crush.js"
+    "path": "data/patches/strudel/pixelate_crush.js",
+    "usesHydra": true
   },
   {
     "title": "bajo.sinTerminar",
@@ -83,7 +84,8 @@
     "title": "Ambient2_PajarosDrone",
     "type": "strudel",
     "thumb": "icons/wave.png",
-    "path": "data/patches/strudel/ambient2.js"
+    "path": "data/patches/strudel/ambient2.js",
+    "usesHydra": true
   },
   {
     "title": "Contrapunto",
@@ -101,7 +103,8 @@
     "title": "Coding DnB/Jungle 1",
     "type": "strudel",
     "thumb": "icons/wave.png",
-    "path": "data/patches/strudel/dnb2.js"
+    "path": "data/patches/strudel/dnb2.js",
+    "usesHydra": true
   },
   {
     "title": "Coding_Trance (@_switch_angel tutorial)",
