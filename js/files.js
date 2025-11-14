@@ -921,7 +921,7 @@ function openFolder(name) {
 
   if (name === "Currículum") {
   // 👉 Aquí pon la URL real de tu PDF
-  openPDFWindow("Currículum", "./assets/cv.pdf");
+  openImageWindow("Currículum", "./assets/cv.png");
   return;
 }
   
@@ -1472,13 +1472,10 @@ labObserver.observe(document.body, { childList: true, subtree: true });
 window.addEventListener('resize', fixLiveLabWindowSize);
 
 
-// ===============================
-//  PDF WINDOW — VERSIÓN FINAL (PDF.js LOCAL)
-// ===============================
 
 
-
-function openPDFWindow(name, pdfUrl) {
+//CV
+function openImageWindow(name, imgUrl) {
   const key = normalizeName(name);
   const winId = `win-${key}`;
   let windowEl = document.getElementById(winId);
@@ -1490,14 +1487,13 @@ function openPDFWindow(name, pdfUrl) {
     return;
   }
 
-  // === CREAR VENTANA ===
+  // Crear ventana
   windowEl = document.createElement("div");
-  windowEl.className = "window window-pdf";
+  windowEl.className = "window window-image";
   windowEl.id = winId;
   windowEl.dataset.task = key;
-  let maximized = false;
 
-  // === HEADER ===
+  // HEADER
   const header = document.createElement("div");
   header.className = "window-header";
   header.innerHTML = `
@@ -1509,59 +1505,41 @@ function openPDFWindow(name, pdfUrl) {
     </div>
   `;
 
-  // === VISOR PDF.js LOCAL ===
-  const viewer = "pdfjs/web/viewer.html";
-
+  // CONTENIDO (solo una imagen)
   const content = document.createElement("div");
-  content.className = "window-content pdf-container";
+  content.className = "window-content img-container";
   content.innerHTML = `
-    <iframe
-      class="pdf-frame"
-      src="${viewer}?file=${pdfUrl}#zoom=page-width"
-    ></iframe>
+    <img src="${imgUrl}" class="img-viewer">
   `;
 
   windowEl.appendChild(header);
   windowEl.appendChild(content);
   document.body.appendChild(windowEl);
 
-  // ======================================
-  //   TAMAÑO INICIAL EXACTO DEL PDF
-  // ======================================
-  const aspect = 1 / 1.414; // A4 vertical
-  const targetH = Math.floor(window.innerHeight * 0.85);
-  const targetW = Math.floor(targetH * aspect);
-
-  const W = Math.min(targetW, window.innerWidth - 40);
-  const H = Math.min(targetH, window.innerHeight - 60);
-
-  windowEl.style.width  = W + "px";
-  windowEl.style.height = H + "px";
-  windowEl.style.left   = (window.innerWidth - W) / 2 + "px";
-  windowEl.style.top    = (window.innerHeight - H) / 2 + "px";
+  // Tamaño inicial ajustado a la imagen
+  windowEl.style.width = "600px";
+  windowEl.style.height = "600px";
+  windowEl.style.left = (window.innerWidth - 600) / 2 + "px";
+  windowEl.style.top = (window.innerHeight - 800) / 2 + "px";
 
   windowEl.style.display = "block";
   bringToFront(windowEl);
   addToTaskbar(name);
 
-  // ======================================
-  //   BOTONES
-  // ======================================
+  // Botones
   header.querySelector(".close-btn").onclick = () => {
     windowEl.remove();
-    const taskBtn = document.querySelector(`.task-btn[data-task="${key}"]`);
-    if (taskBtn) taskBtn.remove();
+    document.querySelector(`.task-btn[data-task="${key}"]`)?.remove();
   };
 
   header.querySelector(".min-btn").onclick = () => {
     windowEl.style.display = "none";
   };
 
+  // Maximizar / restaurar
+  let maximized = false;
   header.querySelector(".max-btn").onclick = () => {
-    const iframe = windowEl.querySelector(".pdf-frame");
-
     if (!maximized) {
-      // Guardar estado
       windowEl.dataset.prev = JSON.stringify({
         left: windowEl.style.left,
         top: windowEl.style.top,
@@ -1569,33 +1547,41 @@ function openPDFWindow(name, pdfUrl) {
         height: windowEl.style.height
       });
 
-      // Pantalla completa
       windowEl.style.left = "0";
       windowEl.style.top = "0";
       windowEl.style.width = window.innerWidth + "px";
       windowEl.style.height = (window.innerHeight - 40) + "px";
-
-      // ► Zoom REAL (page-fit)
-      const Z = window.PDF_MAX_ZOOM || 120;
-      iframe.src =
-      `${viewer}?file=${pdfUrl}#zoom=${Z}&v=${Date.now()}`;
+      maximized = true;
 
     } else {
-      // Restaurar tamaño original
-      const prev = JSON.parse(windowEl.dataset.prev);
-      windowEl.style.left = prev.left;
-      windowEl.style.top = prev.top;
-      windowEl.style.width = prev.width;
-      windowEl.style.height = prev.height;
+    const prev = JSON.parse(windowEl.dataset.prev);
 
-      // ► Zoom normal (page-width)
-      iframe.src =
-        `${viewer}?file=${pdfUrl}#zoom=page-width&v=${Date.now()}`;
-      maximized = false;
-    }
+    // Restaurar tamaño y posición anteriores
+    windowEl.style.left = prev.left;
+    windowEl.style.top = prev.top;
+    windowEl.style.width = prev.width;
+    windowEl.style.height = prev.height;
+    maximized = false;
+
+    // 🔥 Ajustar límites para que no se meta bajo la taskbar
+    const taskbarH = parseInt(getComputedStyle(document.documentElement)
+      .getPropertyValue('--taskbar-h')) || 40;
+
+    const maxTop = window.innerHeight - taskbarH - windowEl.offsetHeight;
+    const maxLeft = window.innerWidth - windowEl.offsetWidth;
+
+    // Corrige automáticamente si se sale por abajo o por los lados
+    const newTop = parseInt(windowEl.style.top);
+    const newLeft = parseInt(windowEl.style.left);
+
+    if (newTop > maxTop) windowEl.style.top = maxTop + "px";
+    if (newLeft < 0) windowEl.style.left = "0px";
+    if (newLeft > maxLeft) windowEl.style.left = maxLeft + "px";
+
+        }
   };
 
-  // === DRAG ===
+  // Drag
   header.addEventListener("mousedown", (e) => {
     if (!isMobile && !e.target.closest(".window-buttons")) {
       startDrag(windowEl, e);

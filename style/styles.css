@@ -1241,39 +1241,25 @@ body.dragging .icon {
   0%, 100% { text-shadow: 0 0 6px rgba(14,165,233,0.5), 0 0 12px rgba(168,85,247,0.4); }
   50% { text-shadow: 0 0 12px rgba(14,165,233,0.9), 0 0 20px rgba(168,85,247,0.7); }
 }
+.window-image {
+  background: #fff;
+  overflow: hidden;
+}
 
-/* Ventana PDF */
-.window-pdf .window-content {
-  background: #1e1e1e;
+.img-container {
+  width: 100%;
+  height: calc(100% - 32px);
+  overflow: auto;
+  background: #111;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  overflow: auto;
-  padding: 10px;
+  padding: 0px;
 }
 
-/* Lienzo PDF */
-.pdf-canvas {
+.img-viewer {
+  max-width: 100%;
+  height: auto;
   display: block;
-  background: white;
-  box-shadow: 0 0 16px rgba(0,0,0,0.35);
-  margin: 0 auto;
-  border-radius: 4px;
-}
-/* Contenedor del PDF: solo scroll vertical */
-/* Contenedor: ocupa todo, solo scroll vertical */
-.pdf-container {
-  padding: 0;
-  margin: 0;
-  overflow-y: auto;
-  overflow-x: hidden !important;
-  background: #111;
-}
-
-/* El iframe debe ocupar SIEMPRE el 100% de ancho y alto */
-.pdf-frame {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  display: block;
+  user-select: none;
 }
