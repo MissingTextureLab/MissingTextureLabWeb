@@ -88,7 +88,7 @@ function createHologram(mesh) {
   return group;
 }
 
-// ==================================================
+// =================================================
 // ✨ PARTICLE SPARKS
 // ==================================================
 let sparks, sparkPositions, sparkSpeeds;
