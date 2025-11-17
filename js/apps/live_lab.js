@@ -13,7 +13,7 @@ import { UnrealBloomPass } from "https://cdn.jsdelivr.net/npm/three@0.180.0/exam
 // TEXT / LOADERS
 import { FontLoader } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/FontLoader.js";
 import { TextGeometry } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/geometries/TextGeometry.js";
-//Orbit Controls
+// Orbit Controls
 import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js";
 import { OBJExporter } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/exporters/OBJExporter.js";
@@ -23,6 +23,10 @@ import { bringToFront, addToTaskbar } from "../windows.js";
 let hydra;
 let portfolioCodes = [];
 let strudelEmbedLoaded = false;
+
+// 🔧 estado específico para Three standalone
+let threeRenderer = null;
+let threeResizeHandler = null;
 
 // ==========================================================
 // 📏 Fix viewport en móviles (Safari, Chrome)
@@ -80,7 +84,7 @@ async function ensureThree() {
   window.ShaderPass = ShaderPass;
   window.GLTFLoader = GLTFLoader;
   window.OBJExporter = OBJExporter;
-  
+
   console.log("✅ Three.js y dependencias globales listas (desde import ESM).");
 }
 
@@ -92,9 +96,9 @@ function cleanupThreeOverlay() {
   if (overlay) {
     try {
       overlay.remove();
-      console.log("🧹 Canvas Three.js eliminado.");
+      console.log("🧹 Canvas Three.js overlay eliminado.");
     } catch (e) {
-      console.warn("⚠️ No se pudo eliminar el canvas Three:", e);
+      console.warn("⚠️ No se pudo eliminar el canvas Three overlay:", e);
     }
   }
   window._threeCanvas = null;
@@ -103,6 +107,8 @@ function cleanupThreeOverlay() {
     window._threeAnimationId = null;
   }
 }
+
+// 🔧 Limpieza específica de iframe (si lo usas en otros sitios)
 function cleanupThreeFrame() {
   const wrap = document.getElementById("three-wrapper");
   const frame = document.getElementById("three-frame");
@@ -111,6 +117,59 @@ function cleanupThreeFrame() {
     wrap.style.visibility = "hidden";
     frame.src = "about:blank"; // Reinicia iframe
   }
+}
+
+// 🔧 NUEVO: limpieza suave del modo Three standalone
+function cleanupThreeCore() {
+  const threeContainer = document.getElementById("three-container");
+  const canvas = document.getElementById("three-canvas");
+
+  if (threeResizeHandler) {
+    window.removeEventListener("resize", threeResizeHandler);
+    threeResizeHandler = null;
+  }
+
+  if (threeRenderer) {
+    try {
+      threeRenderer.dispose?.();
+    } catch (e) {
+      console.warn("⚠️ No se pudo hacer dispose del renderer Three:", e);
+    }
+    threeRenderer = null;
+  }
+
+  if (canvas) {
+    // limpiar el contenido por si acaso
+    const gl = canvas.getContext("webgl") || canvas.getContext("webgl2");
+    if (gl) {
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+    }
+  }
+
+  if (threeContainer) {
+    threeContainer.style.opacity = "0";
+    threeContainer.style.visibility = "hidden";
+  }
+
+  console.log("🧹 Three standalone reseteado.");
+}
+
+async function cleanupStrudel() {
+  try {
+    if (window.Tone?.Transport?.state !== "stopped") {
+      await window.Tone.Transport.stop();
+    }
+    if (window.Tone?.context && window.Tone.context.state !== "closed") {
+      await window.Tone.context.close();
+    }
+    console.log("🧹 Strudel detenido.");
+  } catch (err) {
+    console.warn("⚠️ Error al limpiar Strudel:", err);
+  }
+
+  const mask = document.getElementById("strudel-mask");
+  if (mask) mask.innerHTML = "";
 }
 
 // ==========================================================
@@ -172,25 +231,31 @@ async function loadPortfolioCodes() {
 // 🧠 Lógica principal de selección de tarjeta
 // ==========================================================
 async function handleCardClick(item) {
-  cleanupThreeOverlay(); // 🔹 Limpia antes de cambiar de patch
+  // 🔧 Limpieza general antes de cambiar de modo
+  await cleanupStrudel();
+  cleanupThreeOverlay();
+  cleanupThreeCore();
 
   const hydraContainer = document.getElementById("hydra-container");
   const strudelWrapper = document.getElementById("strudel-wrapper");
+  const threeContainer = document.getElementById("three-container");
   const overlay = document.getElementById("audio-unlock");
 
+  // apagar cualquier overlay de audio
+  if (overlay) overlay.style.display = "none";
+
+  // 🔧 Hidratar / parar Hydra si estaba activo
   if (hydra) {
     try {
       hydra.synth.stop();
       hydra.resizeObserver?.disconnect?.();
-      hydra.canvas?.getContext("webgl")?.getExtension("WEBGL_lose_context")?.loseContext();
     } catch (e) {
       console.warn("Hydra stop warning:", e);
     }
     hydra = null;
   }
 
-  if (overlay) overlay.style.display = "none";
-
+  // 🔧 Cerrar panel en móvil al cambiar de tarjeta
   const panel = document.getElementById("lab-left");
   const toggle = document.getElementById("lab-folder-toggle");
   if (document.body.classList.contains("mobile-mode") && panel && toggle) {
@@ -199,27 +264,24 @@ async function handleCardClick(item) {
     toggle.textContent = "📂";
   }
 
+  // Normalizar visibilidad base: todo oculto
+  toggleVisible(strudelWrapper, false);
+  toggleVisible(hydraContainer, false);
+  toggleVisible(threeContainer, false);
+
   // === STRUDEL ===
   if (item.type === "strudel") {
-    toggleVisible(hydraContainer, false);
+    // ✅ solo Strudel visible
     toggleVisible(strudelWrapper, true);
 
     const mask = document.getElementById("strudel-mask");
-    try {
-      if (window.Tone?.Transport?.state !== "stopped") {
-        await window.Tone.Transport.stop();
-      }
-      if (window.Tone?.context) {
-        await window.Tone.context.close();
-        console.log("🎧 Contexto Tone cerrado.");
-      }
-    } catch (err) {
-      console.warn("⚠️ Error al limpiar Strudel anterior:", err);
-    }
 
-    mask.innerHTML = "";
-    mask.style.opacity = 0;
-    setTimeout(() => (mask.style.opacity = 1), 150);
+    if (mask) {
+      mask.innerHTML = "";
+      mask.style.opacity = 0;
+      // pequeño fade-in para la UI
+      setTimeout(() => (mask.style.opacity = 1), 150);
+    }
 
     if (!strudelEmbedLoaded) {
       await lazyLoadScript("https://unpkg.com/@strudel/embed@latest");
@@ -243,10 +305,10 @@ async function handleCardClick(item) {
       border: "none",
     });
 
-    mask.appendChild(repl);
+    if (mask) mask.appendChild(repl);
     console.log("🎼 Código original (UTF-8):", code);
 
-    if (window.Tone && Tone.context?.state === "suspended") {
+    if (window.Tone && Tone.context?.state === "suspended" && overlay) {
       overlay.style.display = "flex";
       overlay.onclick = () =>
         Tone.context.resume().then(() => (overlay.style.display = "none"));
@@ -256,60 +318,69 @@ async function handleCardClick(item) {
 
   // === HYDRA / HYDRA-THREE ===
   if (item.type === "hydra" || item.type === "hydra-three") {
-    toggleVisible(strudelWrapper, false);
+    // ✅ solo Hydra visible
     toggleVisible(hydraContainer, true);
 
     const code = await getPatchCode(item);
     const codeArea = document.getElementById("hydra-code");
-    codeArea.value = code;
+    if (codeArea) codeArea.value = code;
 
     requestAnimationFrame(() => runHydraCode());
-    }
-  
-  // === THREE PURO (modo Blob con importmap replicado) ===
-  if (item.type === "three") {
-    toggleVisible(strudelWrapper, false);
-    toggleVisible(hydraContainer, false);
-
-    const threeContainer = document.getElementById("three-container");
-    const canvas = document.getElementById("three-canvas");
-
-    toggleVisible(threeContainer, true);
-
-    cleanupThreeOverlay();
-    cleanupThreeFrame();
-
-    await ensureThree();
-
-    const code = await getPatchCode(item);
-
-    // ===============================
-    // 🎨 Inicialización Three.js real
-    // ===============================
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    renderer.setPixelRatio(window.devicePixelRatio);
-
-    const resize = () => {
-      const { clientWidth: w, clientHeight: h } = threeContainer;
-      renderer.setSize(w, h);
-    };
-
-    resize();
-    window.addEventListener("resize", resize);
-
-    // Ejecutar tu patch Three.js en sandbox
-    try {
-      new Function("THREE", "renderer", "canvas", code)(
-        THREE,
-        renderer,
-        canvas
-      );
-    } catch (e) {
-      console.error("❌ Error en código Three.js:", e);
-    }
-
     return;
   }
+
+  // === THREE PURO (modo Blob con importmap replicado) ===
+    if (item.type === "three") {
+
+      // 1️⃣ Remove old listeners + renderer
+      cleanupThreeCore();
+
+      const threeContainer = document.getElementById("three-container");
+      toggleVisible(threeContainer, true);
+
+      // 2️⃣ REPLACE canvas with a fresh one
+      const oldCanvas = document.getElementById("three-canvas");
+      const newCanvas = oldCanvas.cloneNode(true);
+      oldCanvas.parentNode.replaceChild(newCanvas, oldCanvas);
+
+      // 3️⃣ Now safe to get fresh canvas
+      const canvas = newCanvas;
+
+      await ensureThree();
+
+      const code = await getPatchCode(item);
+
+      // 4️⃣ Create renderer on a NEW context
+      threeRenderer = new THREE.WebGLRenderer({
+          canvas,
+          antialias: true
+      });
+
+      threeRenderer.setPixelRatio(window.devicePixelRatio);
+
+      const resize = () => {
+          const w = threeContainer.clientWidth;
+          const h = threeContainer.clientHeight;
+          if (w && h) threeRenderer.setSize(w, h, false);
+      };
+      threeResizeHandler = resize;
+      resize();
+      window.addEventListener("resize", resize);
+
+      try {
+          new Function("THREE", "renderer", "canvas", code)(
+              THREE,
+              threeRenderer,
+              canvas
+          );
+      } catch (e) {
+          console.error("❌ Error en código Three:", e);
+      }
+
+      return;
+  }
+
+  console.warn("⚠️ Tipo de tarjeta desconocido:", item.type);
 }
 
 // ==========================================================
@@ -468,11 +539,21 @@ function setupWindowControls(win, isMobile) {
   };
 
   header.querySelector(".close-btn").onclick = async () => {
-    cleanupThreeOverlay(); // 🔹 Limpia al cerrar
+    // 🔧 Al cerrar limpiamos todo lo posible
+    await cleanupStrudel();
+    cleanupThreeOverlay();
+    cleanupThreeCore();
+    if (hydra) {
+      try {
+        hydra.synth.stop();
+      } catch (e) {}
+      hydra = null;
+    }
     document.querySelector('.task-btn[data-task="live-lab"]')?.remove();
     win.remove();
   };
 }
+
 function setupPanelToggle() {
   const panel = document.getElementById("lab-left");
   const toggle = document.getElementById("lab-folder-toggle");
@@ -484,6 +565,7 @@ function setupPanelToggle() {
     toggle.textContent = isOpen ? "📁" : "📂";
   });
 }
+
 // ==========================================================
 // 🚀 Crear ventana principal
 // ==========================================================

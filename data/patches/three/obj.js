@@ -46,55 +46,43 @@ function createHologram(mesh) {
   const geo = mesh.geometry;
   const group = new THREE.Group();
 
-  // 1) Face shimmer
-  const face = new THREE.Mesh(
-    geo,
-    new THREE.MeshBasicMaterial({
-      color: 0x009dff,
+  // --------------------------------------------------
+  // 1) SOLO WIREFRAME — limpio, exterior, luminoso
+  // --------------------------------------------------
+  const edges = new THREE.EdgesGeometry(geo, 10);
+  const wire = new THREE.LineSegments(
+    edges,
+    new THREE.LineBasicMaterial({
+      color: 0x7fe4ff,
       transparent: true,
-      opacity: 0.15,
+      opacity: 1.0,
+      linewidth: 1.2,
+      depthTest: false,
       depthWrite: false,
       blending: THREE.AdditiveBlending
     })
   );
-  group.add(face);
 
-  // 2) Wireframe visible
-  const wire = new THREE.LineSegments(
-    new THREE.WireframeGeometry(geo),
-    new THREE.LineBasicMaterial({
-      color: 0x7fe4ff,
-      transparent: true,
-      opacity: 0.9
-    })
-  );
+  wire.renderOrder = 999;
   group.add(wire);
 
-  // 3) Outline
-  const outline = new THREE.Mesh(
-    geo,
-    new THREE.MeshBasicMaterial({
-      color: 0x33ccff,
-      transparent: true,
-      opacity: 0.22,
-      side: THREE.BackSide
-    })
-  );
-  outline.scale.multiplyScalar(1.03);
-  group.add(outline);
-
-  // 4) Glow shell
+  // --------------------------------------------------
+  // 2) SUPER GLOW SUAVE (solo borde, no volumen)
+  // --------------------------------------------------
   const glow = new THREE.Mesh(
     geo,
     new THREE.MeshBasicMaterial({
-      color: 0x44ddff,
+      color: 0x0077cc,
       transparent: true,
-      opacity: 0.08,
+      opacity: 0.05,
+      depthTest: false,
+      depthWrite: false,
       blending: THREE.AdditiveBlending,
-      depthWrite: false
+      side: THREE.BackSide
     })
   );
-  glow.scale.multiplyScalar(1.06);
+  glow.scale.multiplyScalar(1.04);
+  glow.renderOrder = 1;
   group.add(glow);
 
   return group;
@@ -277,8 +265,8 @@ composer.addPass(new RenderPass(scene, camera));
 
 const bloom = new UnrealBloomPass(
   new THREE.Vector2(w, h),
-  0.02,
-  0.15,
+  0.00,
+  0.00,
   0.0
 );
 composer.addPass(bloom);
