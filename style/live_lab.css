@@ -155,6 +155,29 @@
 }
 
 /* =========================================================
+   🎨 THREE.js — mismo comportamiento visual que HYDRA
+   ========================================================= */
+
+/* THREE.js — Comportamiento idéntico a Hydra */
+#three-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+  z-index: 3;
+}
+
+#three-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  background: #000;
+  display: block;
+}
+/* =========================================================
    🌈 ZONA PRINCIPAL (Hydra / Strudel)
    ========================================================= */
 .lab-main {

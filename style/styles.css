@@ -1001,7 +1001,6 @@ body.dragging .icon {
 /* un pelín más de respiración entre tarjetas */
 .file-grid{ gap: 16px; }
 
-
 /* === ABOUT 3D WINDOW === */
 .window-about3d {
   background: #000;
@@ -1010,20 +1009,28 @@ body.dragging .icon {
   flex-direction: column;
 }
 
+/* Elimina completamente todo el estilo de window-content normal */
 .window-about3d .window-content {
-  flex: 1;
-  padding: 0;
-  margin: 0;
-  overflow: hidden;
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+
+    padding: 0 !important;
+    margin: 0 !important;
+
+    overflow: hidden !important;
+    height: 100% !important;
 }
 
 /* === LAYOUT: texto IZQUIERDA + canvas DERECHA === */
 .about-layout {
   position: relative;
+  display: flex;
+  flex-direction: row;
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: row; /* ← texto primero, canvas después */
   overflow: hidden;
 }
 
@@ -1034,128 +1041,41 @@ body.dragging .icon {
   left: 0;
   width: 30%;
   height: 100%;
+
   display: flex;
   flex-direction: column;
-  justify-content: flex-start; /* ✅ el contenido arranca arriba */
   align-items: flex-start;
+  justify-content: flex-start;
+
   padding: 4vw 2.5vw;
   color: #e6e6e6;
+
   font-family: "IBM Plex Sans", "Cascadia Code", monospace;
+
   background: rgba(8, 8, 8, 0.55);
-  backdrop-filter: blur(16px) brightness(1.05);
   border-right: 1px solid rgba(138,191,255,0.15);
   box-shadow: 8px 0 20px rgba(0,0,0,0.4);
-  z-index: 20;
-  transition: transform 0.6s cubic-bezier(.25,.8,.25,1), opacity 0.5s ease;
+  backdrop-filter: blur(16px) brightness(1.05);
 
-  overflow-y: auto;       /* ✅ scroll vertical visible */
-  overflow-x: hidden;     /* 🚫 sin scroll horizontal */
+  z-index: 20;
+
+  overflow-y: auto;
+  overflow-x: hidden;
   scroll-behavior: smooth;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(168, 85, 247, 0.25) transparent;
 }
 
-/* === CANVAS 3D DERECHA === */
+/* === CANVAS 3D — OCUPA TODO EL ESPACIO DERECHO === */
 #about-canvas {
-  order: 1;
-  flex: 1;
-  width: 70%;
-  height: 100%;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
   display: block;
+  background: #000 !important;
+  z-index: 1;
 }
 
-/* === SECCIONES === */
-#about-text section {
-  margin-bottom: 3vh;
-  max-width: 95%;
-  word-wrap: break-word;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-#about-text section:last-child {
-  margin-bottom: 0;
-}
-
-/* === TÍTULOS NEÓN === */
-#about-text h2 {
-  font-size: clamp(1rem, 2vw, 1.3rem);
-  margin-bottom: 0.4rem;
-  color: var(--frutiger-cyan);
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  text-shadow:
-    0 0 8px rgba(14,165,233,0.4),
-    0 0 16px rgba(168,85,247,0.25);
-}
-
-#about-text h2:hover {
-  color: var(--frutiger-light);
-  text-shadow:
-    0 0 12px rgba(168,85,247,0.6),
-    0 0 26px rgba(6,182,212,0.5);
-}
-
-/* ⚡ Parpadeo tubo neón */
-@keyframes neonFlicker {
-  0%, 80%, 100% {
-    opacity: 1;
-    text-shadow:
-      0 0 8px rgba(14,165,233,0.4),
-      0 0 16px rgba(168,85,247,0.25);
-  }
-  81% { opacity: 0.7; filter: brightness(1); }
-  82% { opacity: 0.3; filter: brightness(1); }
-  83% { opacity: 0.9; filter: brightness(1); }
-  84% { opacity: 0.5; filter: brightness(0.5); }
-  85% { opacity: 1; filter: brightness(1.1); }
-}
-
-/* Ritmos distintos */
-#about-text section:nth-of-type(1) h2 { --delay: 0s; }
-#about-text section:nth-of-type(2) h2 { --delay: 10s; }
-#about-text section:nth-of-type(3) h2 { --delay: 20s; }
-#about-text section:nth-of-type(4) h2 { --delay: 25s; }
-
-#about-text {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 30%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 4vw 2.5vw;
-  color: #e6e6e6;
-  font-family: "IBM Plex Sans", "Cascadia Code", monospace;
-  background: rgba(8, 8, 8, 0.55);
-  backdrop-filter: blur(16px) brightness(1.05);
-  border-right: 1px solid rgba(138,191,255,0.15);
-  box-shadow: 8px 0 20px rgba(0,0,0,0.4);
-  z-index: 20;
-  transition: transform 0.6s cubic-bezier(.25,.8,.25,1), opacity 0.5s ease;
-
-  overflow-y: auto;       /* ✅ scroll vertical visible */
-  overflow-x: hidden;     /* 🚫 sin scroll horizontal */
-  scroll-behavior: smooth;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(168, 85, 247, 0.25) transparent;
-}
-
-/* === SCROLLBAR PERSONALIZADA === */
-#about-text::-webkit-scrollbar {
-  width: 6px;
-}
-#about-text::-webkit-scrollbar-thumb {
-  background: rgba(168, 85, 247, 0.25);
-  border-radius: 4px;
-}
-#about-text::-webkit-scrollbar-thumb:hover {
-  background: rgba(14, 165, 233, 0.5);
-}
-
-/* === TEXTO FLEXIBLE Y FLUIDO === */
+/* === ESTILO DE SECCIONES DEL PANEL === */
 #about-text section {
   margin-bottom: 3vh;
   max-width: 95%;
@@ -1169,8 +1089,8 @@ body.dragging .icon {
   font-size: clamp(1rem, 2vw, 1.3rem);
   margin-bottom: 0.4rem;
   color: var(--frutiger-cyan);
-  letter-spacing: 0.8px;
   text-transform: uppercase;
+  letter-spacing: 0.8px;
   text-shadow:
     0 0 8px rgba(14,165,233,0.4),
     0 0 16px rgba(168,85,247,0.25);
@@ -1183,33 +1103,69 @@ body.dragging .icon {
   margin: 0.2rem 0;
 }
 
-/* === OPTIMIZADO PARA ALTURAS PEQUEÑAS === */
-@media (max-height: 700px) {
-  #about-text {
-    padding: 2vw 2vw;
-  }
-  #about-text h2 {
-    font-size: clamp(0.9rem, 1.8vw, 1.1rem);
-  }
-  #about-text p {
-    font-size: clamp(0.75rem, 1vw, 0.9rem);
-    line-height: 1.3;
-  }
+/* Scrollbar */
+#about-text::-webkit-scrollbar {
+  width: 6px;
+}
+#about-text::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.25);
+  border-radius: 4px;
 }
 
-/* === RESPONSIVE MÓVIL === */
+/* === MÓVIL: layout perfecto a pantalla completa === */
 @media (max-width: 900px) {
+
+  /* La ventana completa ocupa EXACTAMENTE el alto total */
+  .window-about3d {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important; /* ❗ Sin scroll general */
+  }
+
+  /* El contenido interno también ocupa toda la pantalla */
+  .window-about3d .window-content {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: calc(100vh - var(--titlebar-h)) !important;
+    overflow: hidden !important; /* ❗ Sin scroll general */
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* El layout pasa a columna */
+  .about-layout {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important; /* ❗ Evita scroll externo */
+  }
+
+  /* TEXTO – ocupa todo lo necesario y sí tiene scroll */
   #about-text {
     position: relative;
     width: 100%;
-    height: auto;
-    flex: 1;
-    border-right: none;
-    border-bottom: 1px solid rgba(138,191,255,0.15);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    height: calc(100vh - var(--titlebar-h)) !important;
+    overflow-y: scroll !important;
+    overflow-x: hidden !important;
     padding: 8vw 5vw;
+    padding-top: calc(var(--titlebar-h) + 40px) !important; /* 🔥 baja el texto */
+    border-bottom: none !important;
+    background: rgba(8, 8, 8, 0.6);
+  }
 
-    overflow-y: visible; /* en móvil no hace falta scroll */
+  /* CANVAS – ocupa el resto exacto del espacio */
+  #about-canvas {
+    flex: 1 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: calc(100vh - var(--titlebar-h) - 45vh) !important;
+    overflow: hidden !important;
+    background: #000;
   }
 }
 

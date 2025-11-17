@@ -14,6 +14,18 @@
     "path": "data/patches/hydra/snow.js"
   },
   {
+    "title": "Viewer",
+    "type": "three", 
+    "thumb": "icons/hydra.png",
+    "path": "data/patches/three/obj.js"
+  },
+    {
+    "title": "Lines",
+    "type": "three", 
+    "thumb": "icons/hydra.png",
+    "path": "data/patches/three/lines.js"
+  },
+  {
     "title": "Pixel_Camera",
     "type": "hydra", 
     "thumb": "icons/hydra.png",

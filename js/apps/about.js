@@ -1,229 +1,394 @@
-// about.js — igual que antes pero con contraste y fondo oscuro
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+// about.js — versión final integrada con HOLOGRAMA MAYA como fondo
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 
 export function initAbout3D() {
   const canvas = document.getElementById("about-canvas");
   if (!canvas) return;
+
   const container = canvas.parentElement;
 
-  // === ESCENA Y CÁMARA ===
+  // =====================================================
+  // 🔷 1. TAMAÑO INICIAL
+  // =====================================================
+  function getSize() {
+    return {
+      w: canvas.clientWidth || container.offsetWidth || 800,
+      h: canvas.clientHeight || container.offsetHeight || 600
+    };
+  }
+
+  let { w, h } = getSize();
+
+  // =====================================================
+  // 🔷 2. ESCENA HOLOGRÁFICA
+  // =====================================================
   const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x01030a);
 
-  // Fondo oscuro semitransparente para ganar contraste
-  const backgroundColor = new THREE.Color(0x0b0b0b);
-  scene.background = backgroundColor;
+  // =====================================================
+  // 🔷 3. CÁMARA
+  // =====================================================
+  const camera = new THREE.PerspectiveCamera(55, w / h, 0.1, 100);
+  camera.position.set(0, 1, 2.5);
 
-  const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
-  camera.position.set(0, 0, 6);
+  // =====================================================
+  // 🔷 4. RENDERER
+  // =====================================================
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true
+  });
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(container.offsetWidth, container.offsetHeight); // 🔹 igual que under_construction.js
-  renderer.domElement.style.position = 'absolute';
-  renderer.domElement.style.inset = 0; // 🔹 garantiza que cubre todo el contenedor
-  renderer.domElement.style.width = '100%';
-  renderer.domElement.style.height = '100%';
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.3;
-  container.appendChild(renderer.domElement);
+  renderer.setSize(w, h);
 
-  // === ILUMINACIÓN ===
-  const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-  const keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
-  keyLight.position.set(3, 3, 5);
-  const rimLight = new THREE.PointLight(0x99ccff, 1.2, 25);
-  rimLight.position.set(-3, -2, 4);
-  scene.add(ambient, keyLight, rimLight);
+  // =====================================================
+  // 🔷 5. CONTROLES
+  // =====================================================
+  const controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.target.set(0, 0.4, 0);
 
-  // === MODELOS ===
-  const loader = new GLTFLoader();
-  const paths = [
-    './models/about/piano.glb',
-    './models/about/computer.glb',
-    './models/about/pencils.glb',
-    './models/about/metronome.glb'
+  // =====================================================
+  // 🔷 6. HOLOGRAMA BUILDER
+  // =====================================================
+  function createHologram(mesh) {
+    const geo = mesh.geometry;
+    const group = new THREE.Group();
+
+    const face = new THREE.Mesh(
+      geo,
+      new THREE.MeshBasicMaterial({
+        color: 0x009dff,
+        transparent: true,
+        opacity: 0.15,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      })
+    );
+    group.add(face);
+
+    const wire = new THREE.LineSegments(
+      new THREE.WireframeGeometry(geo),
+      new THREE.LineBasicMaterial({
+        color: 0x7fe4ff,
+        transparent: true,
+        opacity: 0.9
+      })
+    );
+    group.add(wire);
+
+    const outline = new THREE.Mesh(
+      geo,
+      new THREE.MeshBasicMaterial({
+        color: 0x33ccff,
+        transparent: true,
+        opacity: 0.22,
+        side: THREE.BackSide
+      })
+    );
+    outline.scale.multiplyScalar(1.03);
+    group.add(outline);
+
+    const glow = new THREE.Mesh(
+      geo,
+      new THREE.MeshBasicMaterial({
+        color: 0x44ddff,
+        transparent: true,
+        opacity: 0.08,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      })
+    );
+    glow.scale.multiplyScalar(1.06);
+    group.add(glow);
+
+    return group;
+  }
+
+  // =====================================================
+  // 🔷 7. PARTICLE SPARKS
+  // =====================================================
+  let sparks, sparkPositions, sparkSpeeds;
+
+  function createSparks() {
+    const n = 220;
+    sparkPositions = new Float32Array(n * 3);
+    sparkSpeeds = new Float32Array(n);
+
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = 1.2 + Math.random() * 0.4;
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r;
+      const y = -0.3 + Math.random() * 0.8;
+
+      const id = i * 3;
+      sparkPositions[id] = x;
+      sparkPositions[id + 1] = y;
+      sparkPositions[id + 2] = z;
+
+      sparkSpeeds[i] = 0.1 + Math.random() * 0.2;
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(sparkPositions, 3));
+
+    sparks = new THREE.Points(
+      geo,
+      new THREE.PointsMaterial({
+        color: 0x66ddff,
+        size: 0.012,
+        transparent: true,
+        opacity: 0.65,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      })
+    );
+
+    scene.add(sparks);
+  }
+
+  createSparks();
+
+  // =====================================================
+  // 🔷 8. MODELS ROTATION LIST
+  // =====================================================
+  const modelList = [
+    { path: "models/about/computer.glb", scale: 0.03, initialRotation: { x:0, y:0, z:0 } },
+    { path: "models/about/piano.glb",    scale: 0.005, initialRotation: { x:0, y:0, z:0 } },
+    { path: "models/about/metronome.glb",scale: 0.5,   initialRotation: { x:0, y:0, z:0 } },
+    { path: "models/gear.glb",           scale: 1.0,   initialRotation: { x:0, y:0, z:0 } }
   ];
 
-  const objs = [];
-  let active = 0;
-  const backgroundClones = [];
+  let modelRoot = null;
+  let currentModelIndex = -1;
+  const loader = new GLTFLoader();
 
-  function scaleToFit(model) {
-    const fov = camera.fov * (Math.PI / 180);
-    const dist = Math.abs(camera.position.z);
-    const height = 2 * Math.tan(fov / 2) * dist;
-    const scaleFactor = height / 2.5;
-    model.scale.setScalar(scaleFactor);
-  }
-
-  // === Cargar modelos ===
-  paths.forEach((p, i) => {
+  function loadModel(path, scaleValue, initialRotation) {
     loader.load(
-      p,
+      path,
       gltf => {
-        const model = gltf.scene;
-        model.visible = (i === 0);
-        scaleToFit(model);
-        model.traverse(c => {
-          if (c.isMesh) {
-            // ⚙️ Materiales más metálicos y luminosos
-            c.material.metalness = 1.0;
-            c.material.roughness = 0.2;
-            c.material.color = new THREE.Color().setHSL(0.55 + Math.random() * 0.1, 0.8, 0.6);
-            c.material.envMapIntensity = 1.5;
+        modelRoot = new THREE.Group();
+
+        gltf.scene.traverse(obj => {
+          if (obj.isMesh) {
+            obj.rotation.set(0, 0, 0);
+
+            const hologram = createHologram(obj);
+            modelRoot.add(hologram);
           }
         });
-        scene.add(model);
-        objs[i] = model;
-        if (i === 0) createBackgroundClones(model);
-      },
-      undefined,
-      e => console.warn(`Error cargando ${p}`, e)
-    );
-  });
 
-  // === Crear copias de fondo ===
-  function createBackgroundClones(model) {
-    clearBackgroundClones();
-    const count = 25;
-    for (let i = 0; i < count; i++) {
-      const clone = model.clone(true);
-      clone.traverse(c => {
-        if (c.isMesh) {
-          c.material = c.material.clone();
-          c.material.transparent = true;
-          c.material.opacity = 0.25; // 🔆 más visibles
-          c.material.metalness = 0.8;
-          c.material.roughness = 0.3;
+        modelRoot.scale.set(scaleValue, scaleValue, scaleValue);
+
+        if (initialRotation) {
+          modelRoot.rotation.set(
+            initialRotation.x,
+            initialRotation.y,
+            initialRotation.z
+          );
+        }
+
+        modelRoot.position.y = 0.1;
+
+        scene.add(modelRoot);
+        fadeInModel();
+      }
+    );
+  }
+
+  function loadNextModel() {
+    currentModelIndex = (currentModelIndex + 1) % modelList.length;
+    const m = modelList[currentModelIndex];
+
+    fadeOutModel(() => loadModel(m.path, m.scale, m.initialRotation));
+    scheduleNextModel();
+  }
+
+  const minChange = 5;
+  const maxChange = 10;
+
+  function scheduleNextModel() {
+    const t = minChange + Math.random() * (maxChange - minChange);
+    setTimeout(loadNextModel, t * 1000);
+  }
+
+  loadNextModel();
+
+  // =====================================================
+  // 🔷 9. FADE IN / FADE OUT
+  // =====================================================
+  function fadeOutModel(done) {
+    if (!modelRoot) return done();
+
+    let t = 0;
+    (function fade() {
+      t += 0.05;
+      modelRoot.traverse(o => {
+        if (o.material) {
+          o.material.transparent = true;
+          o.material.opacity = 1 - t;
         }
       });
-      const scale = 0.2 + Math.random() * 0.4;
-      clone.scale.multiplyScalar(scale);
-      clone.position.set(
-        (Math.random() - 0.5) * 20,
-        (Math.random() - 0.5) * 10,
-        (Math.random() - 0.5) * -15
-      );
-      clone.rotation.y = Math.random() * Math.PI;
-      clone.rotation.x = Math.random() * Math.PI * 0.2;
-      scene.add(clone);
-      backgroundClones.push({
-        mesh: clone,
-        drift: new THREE.Vector3(
-          (Math.random() - 0.5) * 0.002,
-          (Math.random() - 0.5) * 0.002,
-          (Math.random() - 0.5) * 0.001
-        )
-      });
-    }
+
+      if (t >= 1) {
+        scene.remove(modelRoot);
+        modelRoot = null;
+        done();
+      } else requestAnimationFrame(fade);
+    })();
   }
 
-  function clearBackgroundClones() {
-    backgroundClones.forEach(c => scene.remove(c.mesh));
-    backgroundClones.length = 0;
-  }
+  function fadeInModel() {
+    if (!modelRoot) return;
 
-  // === INTERACCIÓN RATÓN ===
-  let mouseX = 0, mouseY = 0;
-  let targetX = 0, targetY = 0;
-  container.addEventListener("mousemove", e => {
-    const r = container.getBoundingClientRect();
-    mouseX = (e.clientX - r.width / 2) / (r.width / 2);
-    mouseY = (e.clientY - r.height / 2) / (r.height / 2);
-  });
-
-  container.addEventListener("click", () => {
-    if (!objs.length) return;
-    objs[active].visible = false;
-    active = (active + 1) % objs.length;
-    objs[active].visible = true;
-    createBackgroundClones(objs[active]);
-  });
-
-  // === HYDRA OVERLAY ===
-  const hydraCanvas = document.createElement("canvas");
-  Object.assign(hydraCanvas.style, {
-    position: "absolute", inset: 0,
-    pointerEvents: "none", width: "100%", height: "100%"
-  });
-  container.appendChild(hydraCanvas);
-
-  const hydra = new Hydra({
-    canvas: hydraCanvas,
-    detectAudio: false,
-    makeGlobal: true
-  });
-
-  s0.init({ src: renderer.domElement });
-  src(s0)
-    .contrast(1.3) // 💪 más contraste
-    .saturate(1.2)
-    .colorama(() => 0.4 + Math.abs(targetY) * 0.3)
-    .blend(o0, 0.4)
-    .out(o0);
-
-  // === ANIMACIÓN ===
-  let t = 0;
-  function animate() {
-    requestAnimationFrame(animate);
-    t += 0.01;
-    targetX += (mouseX - targetX) * 0.05;
-    targetY += (mouseY - targetY) * 0.05;
-
-    const obj = objs[active];
-    if (obj) {
-      obj.rotation.y += 0.012;
-      obj.rotation.x = Math.sin(t * 0.4) * 0.1 + targetY * 0.15;
-    }
-
-    camera.position.x += (targetX * 1.2 - camera.position.x) * 0.05;
-    camera.position.y += (-targetY * 0.3 - camera.position.y) * 0.05;
-    camera.lookAt(0, 0, 0);
-
-    backgroundClones.forEach(c => {
-      c.mesh.position.add(c.drift);
-      c.mesh.rotation.y += 0.002;
+    modelRoot.traverse(o => {
+      if (o.material) {
+        o.material.transparent = true;
+        o.material.opacity = 0;
+      }
     });
 
-    renderer.render(scene, camera);
-    render(o0);
+    let t = 0;
+    (function fade() {
+      t += 0.05;
+      modelRoot.traverse(o => {
+        if (o.material) o.material.opacity = Math.min(1, t);
+      });
+
+      if (t < 1) requestAnimationFrame(fade);
+    })();
   }
-  animate();
 
-  // === RESPONSIVE ===
-  function resize() {
-    const w = container.offsetWidth;
-    const h = container.offsetHeight;
+  // =====================================================
+  // 🔷 10. POSTPROCESSING
+  // =====================================================
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
 
-    // 🔹 Ajuste real del renderer
+  const bloom = new UnrealBloomPass(
+    new THREE.Vector2(w, h),
+    0.02,
+    0.15,
+    0.0
+  );
+  composer.addPass(bloom);
+
+  const ScanShader = {
+    uniforms: { tDiffuse:{ value:null }, time:{ value:0 } },
+    vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+    fragmentShader:`
+      varying vec2 vUv;
+      uniform sampler2D tDiffuse;
+      uniform float time;
+
+      void main() {
+        vec3 col = texture2D(tDiffuse, vUv).rgb;
+        float scan = sin(vUv.y * 950.0 + time * 18.0) * 0.025;
+        col -= scan;
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `
+  };
+
+  const scanPass = new ShaderPass(ScanShader);
+  composer.addPass(scanPass);
+
+  // =====================================================
+  // 🔷 11. RESPONSIVE
+  // =====================================================
+  function resizeAbout3D() {
+    const canvas = document.getElementById("about-canvas");
+
+    if (!canvas) return;
+
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+
     renderer.setSize(w, h, false);
-    renderer.domElement.style.width = `${w}px`;
-    renderer.domElement.style.height = `${h}px`;
 
-    // 🔹 Ajuste cámara
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+}
 
-    // 🔹 Ajuste Hydra overlay
-    hydra.setResolution(w, h);
 
-    // 🔹 Reescalar objetos
-    objs.forEach(o => o && scaleToFit(o));
+window.addEventListener("resize", resizeAbout3D);
+resizeAbout3D();
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    const w = rect.width;
+    const h = rect.height;
+
+    renderer.setSize(w, h, false);
+    composer.setSize(w, h);
+
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
   }
-  window.addEventListener('resize', resize);
+
+  window.addEventListener("resize", resize);
+
+  // 💥 Detecta cambios de tamaño del contenedor, no solo de la ventana
+  const ro = new ResizeObserver(() => resize());
+  ro.observe(container);
+
   resize();
-  // === PANEL DESPLEGABLE FIJO CON EMOJI ===
+
+  // =====================================================
+  // 🔷 12. LOOP
+  // =====================================================
+  const clock = new THREE.Clock();
+
+  function animate() {
+    requestAnimationFrame(animate);
+
+    const t = clock.getElapsedTime();
+    scanPass.uniforms.time.value = t;
+
+    if (modelRoot) {
+      const dt = clock.getDelta();
+
+      modelRoot.rotation.y += 0.6 * dt;
+      modelRoot.rotation.x = Math.sin(t * 0.6) * 0.35;
+      modelRoot.rotation.z = Math.cos(t * 0.4) * 0.25;
+      modelRoot.position.y = 0.1 + Math.sin(t * 2.0) * 0.015;
+    }
+
+    if (sparks) {
+      const posAttr = sparks.geometry.attributes.position;
+      for (let i = 0; i < sparkSpeeds.length; i++) {
+        const id = i * 3;
+        posAttr.array[id + 1] += sparkSpeeds[i] * 0.01;
+        if (posAttr.array[id + 1] > 0.7) posAttr.array[id + 1] = -0.3;
+      }
+      posAttr.needsUpdate = true;
+      sparks.rotation.y += 0.06;
+    }
+
+    controls.update();
+    composer.render();
+  }
+
+  animate();
+
+  // =====================================================
+  // 🔷 13. PANEL DESPLEGABLE (sin cambios)
+  // =====================================================
   const aboutText = document.getElementById("about-text");
   if (aboutText) {
-    // 🔹 Crear botón fuera del panel (en el contenedor)
     const toggleBtn = document.createElement("button");
     toggleBtn.id = "about-toggle";
-    toggleBtn.textContent = "💬"; // emoji inicial
+    toggleBtn.textContent = "💬";
     container.appendChild(toggleBtn);
 
-    // 🔹 Estilos básicos
     Object.assign(toggleBtn.style, {
       position: "absolute",
       top: "12px",
@@ -249,7 +414,6 @@ export function initAbout3D() {
       toggleBtn.style.background = "rgba(0,0,0,0.4)";
     });
 
-    // 🔹 Estado y comportamiento
     let isCollapsed = false;
 
     toggleBtn.addEventListener("click", () => {
@@ -258,20 +422,17 @@ export function initAbout3D() {
       if (isCollapsed) {
         aboutText.style.transform = "translateX(-100%)";
         aboutText.style.opacity = "0";
-        toggleBtn.textContent = "📄"; // emoji cuando el panel está oculto
-        toggleBtn.style.left = "12px";
+        toggleBtn.textContent = "📄";
         toggleBtn.style.background = "rgba(0,0,0,0.7)";
       } else {
         aboutText.style.transform = "translateX(0)";
         aboutText.style.opacity = "1";
-        toggleBtn.textContent = "💬"; // emoji cuando está desplegado
+        toggleBtn.textContent = "💬";
         toggleBtn.style.background = "rgba(0,0,0,0.4)";
       }
     });
 
-    // 🔹 Transiciones suaves
     aboutText.style.transition =
       "transform 0.6s cubic-bezier(.25,.8,.25,1), opacity 0.5s ease";
   }
-
 }

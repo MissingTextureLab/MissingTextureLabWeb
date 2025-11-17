@@ -7,11 +7,16 @@ import { SimplexNoise } from "https://cdn.jsdelivr.net/npm/three@0.180.0/example
 // POSTPROCESSING
 import { EffectComposer } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/postprocessing/RenderPass.js";
+import { ShaderPass } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/postprocessing/ShaderPass.js";
 import { UnrealBloomPass } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/postprocessing/UnrealBloomPass.js";
 
 // TEXT / LOADERS
 import { FontLoader } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/FontLoader.js";
 import { TextGeometry } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/geometries/TextGeometry.js";
+//Orbit Controls
+import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/OrbitControls.js";
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js";
+import { OBJExporter } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/exporters/OBJExporter.js";
 
 import { bringToFront, addToTaskbar } from "../windows.js";
 
@@ -65,12 +70,17 @@ async function ensureHydra() {
 async function ensureThree() {
   if (window.THREE) return;
   window.THREE = THREE;
+  window.OrbitControls = OrbitControls;
   window.SimplexNoise = SimplexNoise;
   window.EffectComposer = EffectComposer;
   window.RenderPass = RenderPass;
   window.UnrealBloomPass = UnrealBloomPass;
   window.FontLoader = FontLoader;
   window.TextGeometry = TextGeometry;
+  window.ShaderPass = ShaderPass;
+  window.GLTFLoader = GLTFLoader;
+  window.OBJExporter = OBJExporter;
+  
   console.log("✅ Three.js y dependencias globales listas (desde import ESM).");
 }
 
@@ -91,6 +101,15 @@ function cleanupThreeOverlay() {
   if (window._threeAnimationId) {
     cancelAnimationFrame(window._threeAnimationId);
     window._threeAnimationId = null;
+  }
+}
+function cleanupThreeFrame() {
+  const wrap = document.getElementById("three-wrapper");
+  const frame = document.getElementById("three-frame");
+  if (wrap && frame) {
+    wrap.style.opacity = 0;
+    wrap.style.visibility = "hidden";
+    frame.src = "about:blank"; // Reinicia iframe
   }
 }
 
@@ -245,6 +264,51 @@ async function handleCardClick(item) {
     codeArea.value = code;
 
     requestAnimationFrame(() => runHydraCode());
+    }
+  
+  // === THREE PURO (modo Blob con importmap replicado) ===
+  if (item.type === "three") {
+    toggleVisible(strudelWrapper, false);
+    toggleVisible(hydraContainer, false);
+
+    const threeContainer = document.getElementById("three-container");
+    const canvas = document.getElementById("three-canvas");
+
+    toggleVisible(threeContainer, true);
+
+    cleanupThreeOverlay();
+    cleanupThreeFrame();
+
+    await ensureThree();
+
+    const code = await getPatchCode(item);
+
+    // ===============================
+    // 🎨 Inicialización Three.js real
+    // ===============================
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+
+    const resize = () => {
+      const { clientWidth: w, clientHeight: h } = threeContainer;
+      renderer.setSize(w, h);
+    };
+
+    resize();
+    window.addEventListener("resize", resize);
+
+    // Ejecutar tu patch Three.js en sandbox
+    try {
+      new Function("THREE", "renderer", "canvas", code)(
+        THREE,
+        renderer,
+        canvas
+      );
+    } catch (e) {
+      console.error("❌ Error en código Three.js:", e);
+    }
+
+    return;
   }
 }
 
@@ -447,6 +511,9 @@ async function createUI() {
         <div class="lab-cards" id="lab-cards"></div>
       </div>
       <div class="lab-main">
+        <div id="three-container" style="opacity:0;visibility:hidden;">
+          <canvas id="three-canvas"></canvas>
+        </div>
         <div id="strudel-wrapper" class="strudel-zone" style="opacity:0;visibility:hidden;">
           <div id="strudel-mask"></div>
         </div>
