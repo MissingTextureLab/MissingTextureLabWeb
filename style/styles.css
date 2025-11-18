@@ -1162,7 +1162,7 @@ body.dragging .icon {
   #about-canvas {
     flex: 1 !important;
     width: 100% !important;
-    height: auto !important;
+    height: 100% !important;
     min-height: calc(100vh - var(--titlebar-h) - 45vh) !important;
     overflow: hidden !important;
     background: #000;

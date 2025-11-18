@@ -58,3 +58,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 100);
 });
 
+//real vh
+function updateRealVH() {
+  let vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty('--real-vh', `${vh}px`);
+}
+
+updateRealVH();
+window.addEventListener('resize', updateRealVH);
+window.addEventListener('orientationchange', updateRealVH);

@@ -659,7 +659,14 @@ async function createUI() {
   if (!isM) addToTaskbar("Live Lab", "🎛️");
   bringToFront(win);
 }
+function updateRealVH() {
+  let vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty('--real-vh', `${vh}px`);
+}
 
+updateRealVH();
+window.addEventListener('resize', updateRealVH);
+window.addEventListener('orientationchange', updateRealVH);
 // ==========================================================
 // 🚀 Export principal
 // ==========================================================

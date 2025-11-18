@@ -158,7 +158,9 @@ export function initAbout3D() {
     { path: "models/about/computer.glb", scale: 0.03, initialRotation: { x:0, y:0, z:0 } },
     { path: "models/about/piano.glb",    scale: 0.005, initialRotation: { x:0, y:0, z:0 } },
     { path: "models/about/metronome.glb",scale: 0.5,   initialRotation: { x:0, y:0, z:0 } },
-    { path: "models/gear.glb",           scale: 1.0,   initialRotation: { x:0, y:0, z:0 } }
+    { path: "models/gear.glb",           scale: 1.0,   initialRotation: { x:0, y:0, z:0 } },
+    { path: "models/about/xbox.glb",scale: 0.1,   initialRotation: { x:0, y:0, z:0 } },
+    { path: "models/about/security.glb",scale: 1.8,   initialRotation: { x:0, y:0, z:0 } },
   ];
 
   let modelRoot = null;
@@ -173,14 +175,24 @@ export function initAbout3D() {
 
         gltf.scene.traverse(obj => {
           if (obj.isMesh) {
+
+            // 🔥 Recentrar el modelo en su geometría
+            obj.geometry.computeBoundingBox();
+            const box = obj.geometry.boundingBox;
+            const center = new THREE.Vector3();
+            box.getCenter(center);
+            obj.geometry.translate(-center.x, -center.y, -center.z);
+
+            // Eliminar rotación interna
             obj.rotation.set(0, 0, 0);
 
-            const hologram = createHologram(obj);
-            modelRoot.add(hologram);
+            const holo = createHologram(obj);
+            modelRoot.add(holo);
           }
         });
 
         modelRoot.scale.set(scaleValue, scaleValue, scaleValue);
+        modelRoot.lookAt(camera.position);
 
         if (initialRotation) {
           modelRoot.rotation.set(
