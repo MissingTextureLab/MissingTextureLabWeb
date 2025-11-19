@@ -496,7 +496,7 @@ body::before{
 #screensaver-logo {
   position: relative;
   width: 300px;           /* 🔹 más pequeño */
-  opacity: 0.10;           /* 🔹 semitransparente */
+  opacity: 0.20;           /* 🔹 semitransparente */
   transition:
     opacity 0.9s ease-in-out,     /* 🔹 transición más lenta y fluida */
     transform 0.4s ease;

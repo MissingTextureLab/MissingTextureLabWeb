@@ -1522,7 +1522,7 @@ function openImageWindow(name, imgUrl) {
   const content = document.createElement("div");
   content.className = "window-content img-container";
   content.innerHTML = `
-    <img src="${imgUrl}" class="img-viewer">
+    <img src="${imgUrl}" class="img-viewer" style="touch-action: pinch-zoom; user-select: none;">
   `;
 
   windowEl.appendChild(header);

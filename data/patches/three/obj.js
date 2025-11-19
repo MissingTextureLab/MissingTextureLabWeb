@@ -1,8 +1,3 @@
-// ==================================================
-// THREE.js HOLOGRAMA MAYA – Estilo clásico (wireframe visible)
-// + cambio de modelos + control de escala + rotación 3D avanzada
-// ==================================================
-
 function getSize() {
   return {
     w: canvas.clientWidth || 800,
@@ -12,43 +7,42 @@ function getSize() {
 
 let { w, h } = getSize();
 
-// =======================
-// 🌌 ESCENA
-// =======================
+
+// ESCENA
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x01030a);
 
-// =======================
-// 🎥 CÁMARA
-// =======================
+
+// CÁMARA
+
 const camera = new THREE.PerspectiveCamera(55, w / h, 0.1, 100);
 camera.position.set(0, 1, 2.5);
 
-// =======================
-// 🖥 RENDERER
-// =======================
+
+// RENDERER
+
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(w, h);
 
-// =======================
-// 🌀 CONTROLS
-// =======================
+
+// CONTROLS
+
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.target.set(0, 0.4, 0);
 
-// ==================================================
-// ⭐ HOLOGRAMA (wireframe estilo Maya – versión clásica)
-// ==================================================
+
+// HOLOGRAMA 
+
 
 function createHologram(mesh) {
   const geo = mesh.geometry;
   const group = new THREE.Group();
 
-  // --------------------------------------------------
-  // 1) SOLO WIREFRAME — limpio, exterior, luminoso
-  // --------------------------------------------------
+  
+  //WIREFRAME
   const edges = new THREE.EdgesGeometry(geo, 10);
   const wire = new THREE.LineSegments(
     edges,
@@ -66,9 +60,7 @@ function createHologram(mesh) {
   wire.renderOrder = 999;
   group.add(wire);
 
-  // --------------------------------------------------
-  // 2) SUPER GLOW SUAVE (solo borde, no volumen)
-  // --------------------------------------------------
+  // GLOW 
   const glow = new THREE.Mesh(
     geo,
     new THREE.MeshBasicMaterial({
@@ -88,9 +80,8 @@ function createHologram(mesh) {
   return group;
 }
 
-// =================================================
-// ✨ PARTICLE SPARKS
-// ==================================================
+
+// PARTICLE SPARKS
 let sparks, sparkPositions, sparkSpeeds;
 
 function createSparks() {
@@ -133,9 +124,8 @@ function createSparks() {
 
 createSparks();
 
-// ==================================================
-// 📂 MODELOS A ROTAR (scale + initial rotation)
-// ==================================================
+
+// MODELOS
   const modelList = [
     { path: "models/about/computer.glb", scale: 0.03, initialRotation: { x:0, y:0, z:0 } },
     { path: "models/about/piano.glb",    scale: 0.005, initialRotation: { x:0, y:0, z:0 } },
@@ -149,9 +139,8 @@ let modelRoot = null;
 let currentModelIndex = -1;
 const loader = new GLTFLoader();
 
-// ==================================================
-// 🚀 LOAD MODEL
-// ==================================================
+
+// LOAD MODEL
 function loadModel(path, scaleValue, initialRotation) {
   loader.load(
     path,
@@ -161,7 +150,7 @@ function loadModel(path, scaleValue, initialRotation) {
     gltf.scene.traverse(obj => {
       if (obj.isMesh) {
 
-        // 🔥 Recentrar el modelo en su geometría
+        // Recentrar el modelo
         obj.geometry.computeBoundingBox();
         const box = obj.geometry.boundingBox;
         const center = new THREE.Vector3();
@@ -180,7 +169,7 @@ function loadModel(path, scaleValue, initialRotation) {
       modelRoot.scale.set(scaleValue, scaleValue, scaleValue);
       modelRoot.lookAt(camera.position);
       
-      // Rotación inicial correcta
+      // Rotación inicial
       if (initialRotation) {
         modelRoot.rotation.set(
           initialRotation.x,
@@ -199,9 +188,8 @@ function loadModel(path, scaleValue, initialRotation) {
   );
 }
 
-// ==================================================
-// 🔁 AUTO-SWITCH
-// ==================================================
+
+// AUTO-SWITCH
 function loadNextModel() {
   currentModelIndex = (currentModelIndex + 1) % modelList.length;
   const m = modelList[currentModelIndex];
@@ -221,9 +209,8 @@ function scheduleNextModel() {
 
 loadNextModel();
 
-// ==================================================
-// ✨ FADE TRANSITIONS
-// ==================================================
+
+// FADE TRANSITIONS
 function fadeOutModel(done) {
   if (!modelRoot) return done();
 
@@ -266,9 +253,8 @@ function fadeInModel() {
   })();
 }
 
-// ==================================================
-// 🎞 POST-PROCESADO (Bloom + Scanlines suave)
-// ==================================================
+
+// POST-PROCESADO (Bloom + Scanlines)
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
 
@@ -299,9 +285,8 @@ const ScanShader = {
 const scanPass = new ShaderPass(ScanShader);
 composer.addPass(scanPass);
 
-// ==================================================
-// 🔄 RESPONSIVE
-// ==================================================
+
+// RESPONSIVE
 function resize() {
   ({ w, h } = getSize());
   camera.aspect = w / h;
@@ -312,9 +297,8 @@ function resize() {
 window.addEventListener("resize", resize);
 resize();
 
-// ==================================================
-// 🎬 ANIMACIÓN
-// ==================================================
+
+// ANIMACIÓN
 const clock = new THREE.Clock();
 
 function animate() {
@@ -326,12 +310,12 @@ function animate() {
   if (modelRoot) {
     const dt = clock.getDelta();
 
-    // 🔥 Rotación 3D completa para mostrar profundidad
+    // Rotación 3D
     modelRoot.rotation.y += 0.6 * dt;
     modelRoot.rotation.x = Math.sin(t * 0.6) * 0.35;
     modelRoot.rotation.z = Math.cos(t * 0.4) * 0.25;
 
-    // Levitar suavemente
+    // Levitar
     modelRoot.position.y = 0.1 + Math.sin(t * 2.0) * 0.015;
   }
 

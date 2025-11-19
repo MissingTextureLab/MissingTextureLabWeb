@@ -1,9 +1,3 @@
-// ===============
-// THREE.js Start
-// ===============
-
-// Renderer ya existe y ya viene en la variable "renderer"
-// Canvas viene en la variable "canvas"
 
 // --- ESCENA ---
 const scene = new THREE.Scene();
@@ -35,9 +29,7 @@ const bloomPass = new UnrealBloomPass(
 );
 composer.addPass(bloomPass);
 
-// ============================
-// 📌 Generador de líneas
-// ============================
+//  Generador de líneas
 
 function generateFlowLines(seed = 0) {
   lines.clear();
@@ -82,9 +74,8 @@ function generateFlowLines(seed = 0) {
 
 generateFlowLines();
 
-// ============================
-// ✨ ANIMACIÓN tipo Screensaver
-// ============================
+
+// ANIMACIÓN
 
 function animateFlowLines() {
   lines.rotation.y += 0.001;
@@ -106,9 +97,7 @@ function animateFlowLines() {
   });
 }
 
-// ============================
-// 🎬 LOOP PRINCIPAL
-// ============================
+// LOOP PRINCIPAL
 
 function animate() {
   window._threeAnimationId = requestAnimationFrame(animate);
@@ -121,9 +110,8 @@ function animate() {
 
 animate();
 
-// ============================
-// 🔄 RESIZE
-// ============================
+
+// RESIZE
 
 function resize() {
   const w = canvas.clientWidth;
@@ -138,12 +126,10 @@ function resize() {
 resize();
 window.addEventListener("resize", resize);
 
-// ============================
-// 🖱️ CLICK — regenerar líneas
-// ============================
+// CLICK — regenerar líneas
 
 window.addEventListener("click", (e) => {
-  // Evita regenerar si haces click encima de UI (HIDE EDITOR, botones, etc.)
+  // Evita regenerar si haces click encima de UI
   if (!canvas.contains(e.target)) return;
 
   generateFlowLines(Math.random() * 1000);
