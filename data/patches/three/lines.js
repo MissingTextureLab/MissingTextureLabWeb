@@ -1,23 +1,23 @@
 
-// --- ESCENA ---
+// ESCENA
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(70, 1, 0.1, 100);
 camera.position.set(0, 0, 7);
 
-// --- LUCES ---
+// LUCES
 scene.add(new THREE.AmbientLight(0xffffff, 0.15));
 const light = new THREE.PointLight(0xffffff, 1.5);
 light.position.set(5, 5, 5);
 scene.add(light);
 
-// --- LÍNEAS + NOISE ---
+// LÍNEAS + NOISE
 const LINE_COUNT = 1200;
 const POINTS_PER_LINE = 80;
 const noise = new SimplexNoise();
 const lines = new THREE.Group();
 scene.add(lines);
 
-// --- BLOOM ---
+// BLOOM
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
 
@@ -29,7 +29,7 @@ const bloomPass = new UnrealBloomPass(
 );
 composer.addPass(bloomPass);
 
-//  Generador de líneas
+// Generador de líneas
 
 function generateFlowLines(seed = 0) {
   lines.clear();
@@ -126,7 +126,7 @@ function resize() {
 resize();
 window.addEventListener("resize", resize);
 
-// CLICK — regenerar líneas
+// regenerar líneas con click
 
 window.addEventListener("click", (e) => {
   // Evita regenerar si haces click encima de UI

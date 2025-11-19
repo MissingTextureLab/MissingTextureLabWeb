@@ -13,7 +13,7 @@ export let folders = [
   { name: "Youtube",     x: 2, y: 6, icon: "icons/YoutubeFolder.png",    type: "link", url: "https://www.youtube.com/@missingtexture_lab" },
 
   { name: "Privado",     x: 3, y: 6, icon: "icons/FolderLocked.png",     type: "folder" },
-  { name: "Ajustes",     x: 4, y: 6, icon: "icons/FolderAjustes.png",    type: "folder" },
+  { name: "Ajustes", icon: "icons/FolderAjustes.png", type: "app", action: "openAppInfo" },
 ];
 
 // —— Versión móvil —— //
@@ -31,7 +31,7 @@ if (isMobile) {
     { name: "Github",      icon: "icons/FolderGithub.png",     type: "link", url: "https://github.com/MissingTextureLab" },
     { name: "Youtube",     icon: "icons/YoutubeFolder.png",    type: "link", url: "https://www.youtube.com/@missingtexture_lab" },
     { name: "Privado",     icon: "icons/FolderLocked.png",     type: "folder" },
-    { name: "Ajustes",     icon: "icons/FolderAjustes.png",    type: "folder" },
+    { name: "Ajustes", icon: "icons/FolderAjustes.png", type: "app", action: "openAppInfo" },
   ];
 
   // 🎚️ Ajuste general del grid e iconos

@@ -1736,3 +1736,4 @@ function openImageWindow(name, imgUrl) {
     });
   }
 }
+
