@@ -67,3 +67,4 @@ function updateRealVH() {
 updateRealVH();
 window.addEventListener('resize', updateRealVH);
 window.addEventListener('orientationchange', updateRealVH);
+

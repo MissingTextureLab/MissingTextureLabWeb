@@ -17,7 +17,7 @@ scene.background = new THREE.Color(0x01030a);
 // CÁMARA
 
 const camera = new THREE.PerspectiveCamera(55, w / h, 0.1, 100);
-camera.position.set(0, 1, 2.5);
+camera.position.set(-2, 0, 2.5);
 
 
 // RENDERER
@@ -127,60 +127,169 @@ createSparks();
 
 // MODELOS
   const modelList = [
-    { path: "models/about/computer.glb", scale: 0.03, initialRotation: { x:0, y:0, z:0 } },
-    { path: "models/about/piano.glb",    scale: 0.005, initialRotation: { x:0, y:0, z:0 } },
+    { path: "models/about/piano.glb",    scale: 0.01, initialRotation: { x:0, y:0, z:0 } },
+    { path: "models/about/oculus.glb", scale: 0.5, initialRotation: { x:0, y:0, z:0 } },
+    { path: "models/about/xbox.glb",scale: 0.15,   initialRotation: { x:0, y:0, z:0 } },
+    { path: "models/about/security.glb",scale: 4,   initialRotation: { x:0, y:0, z:0 } },
+    { path: "models/gear.glb",           scale: 1,   initialRotation: { x:0, y:0, z:0 } },
+    { path: "models/about/laptop.glb", scale: 6, initialRotation: { x:0, y:0, z:0 } },
     { path: "models/about/metronome.glb",scale: 0.5,   initialRotation: { x:0, y:0, z:0 } },
-    { path: "models/gear.glb",           scale: 1.0,   initialRotation: { x:0, y:0, z:0 } },
-    { path: "models/about/xbox.glb",scale: 0.1,   initialRotation: { x:0, y:0, z:0 } },
-    { path: "models/about/security.glb",scale: 1.8,   initialRotation: { x:0, y:0, z:0 } },
   ];
 
 let modelRoot = null;
 let currentModelIndex = -1;
 const loader = new GLTFLoader();
+// -------------------------------------------------------
+// AUTO NORMALIZACIÓN COMPLETA DEL MODELO 3D
+// -------------------------------------------------------
+
+// 1) Corregir orientación vertical (poner de pie)
+function fixVerticalOrientation(root) {
+  const box = new THREE.Box3().setFromObject(root);
+  const size = new THREE.Vector3();
+  box.getSize(size);
+
+  if (size.y >= size.x && size.y >= size.z) return;     // Y es vertical
+  if (size.z > size.y && size.z > size.x) root.rotation.x = -Math.PI / 2; // Z es vertical
+  else if (size.x > size.y && size.x > size.z) root.rotation.z = Math.PI / 2; // X es vertical
+}
 
 
-// LOAD MODEL
+// 2) Calcular normal dominante (frontal del modelo)
+function computeDominantNormal(root) {
+  const normal = new THREE.Vector3();
+  const cross = new THREE.Vector3();
+
+  root.traverse(obj => {
+    if (!obj.isMesh || !obj.geometry) return;
+
+    const pos = obj.geometry.attributes.position;
+    const index = obj.geometry.index;
+
+    for (let i = 0; i < index.count; i += 3) {
+      const a = index.getX(i);
+      const b = index.getX(i + 1);
+      const c = index.getX(i + 2);
+
+      const vA = new THREE.Vector3().fromBufferAttribute(pos, a);
+      const vB = new THREE.Vector3().fromBufferAttribute(pos, b);
+      const vC = new THREE.Vector3().fromBufferAttribute(pos, c);
+
+      const cb = cross.subVectors(vC, vB);
+      const ab = new THREE.Vector3().subVectors(vA, vB);
+      cb.cross(ab).normalize();
+
+      normal.add(cb);
+    }
+  });
+
+  normal.normalize();
+  return normal;
+}
+
+
+// 3) Orientar frontal automáticamente hacia la cámara
+function fixFrontOrientation(root, camera) {
+  const normal = computeDominantNormal(root);
+
+  const toCam = new THREE.Vector3()
+    .subVectors(camera.position, root.position)
+    .normalize();
+
+  const axis = new THREE.Vector3().crossVectors(normal, toCam).normalize();
+  const angle = Math.acos(normal.dot(toCam));
+
+  if (!isNaN(angle) && axis.length() > 0.0001) {
+    root.rotateOnAxis(axis, angle);
+  }
+}
+
+
+// 4) NORMALIZACIÓN COMPLETA: de pie + centrado + mirando cámara
+function normalizeModel(root, camera) {
+
+  // Reset transformaciones
+  root.position.set(0, 0, 0);
+  root.rotation.set(0, 0, 0);
+  root.scale.set(1, 1, 1);
+
+  // 1) Poner de pie
+  fixVerticalOrientation(root);
+
+  // 2) Centrar en origen
+  let box = new THREE.Box3().setFromObject(root);
+  let center = new THREE.Vector3();
+  box.getCenter(center);
+  root.position.sub(center);
+
+  // 3) Orientación frontal hacia cámara
+  fixFrontOrientation(root, camera);
+
+  // 4) Volver a alinear la base con el suelo
+  box = new THREE.Box3().setFromObject(root);
+  const size = new THREE.Vector3();
+  box.getSize(size);
+
+  root.position.y -= size.y / 2;
+}
+
 function loadModel(path, scaleValue, initialRotation) {
   loader.load(
     path,
     gltf => {
+
       modelRoot = new THREE.Group();
-
-    gltf.scene.traverse(obj => {
-      if (obj.isMesh) {
-
-        // Recentrar el modelo
-        obj.geometry.computeBoundingBox();
-        const box = obj.geometry.boundingBox;
-        const center = new THREE.Vector3();
-        box.getCenter(center);
-        obj.geometry.translate(-center.x, -center.y, -center.z);
-
-        // Eliminar rotación interna
-        obj.rotation.set(0, 0, 0);
-
-        const holo = createHologram(obj);
-        modelRoot.add(holo);
+      const root = gltf.scene;
+      // 🔥 FIX REAL BASADO EN EL GLB SUBIDO
+      if (path.includes("models/about/computer.glb")) {
+        root.rotation.set(
+        -Math.PI / 2,
+        Math.PI / 2,
+        0
+      );
       }
-    });
 
-      // Escala aplicada al root
+      // 🔥 Normalización completa automática
+      // Normalización básica: reset primero
+    root.position.set(0,0,0);
+    root.rotation.set(0,0,0);
+    root.scale.set(1,1,1);
+
+    // FORZAR ROTACIÓN SOLO PARA EL PC
+    if (path.includes("computer.glb")) {
+      root.rotation.set(
+        Math.PI / 2,   // levantar el PC
+        Math.PI,       // girar frontal
+        0
+      );
+    }
+
+      // Crear holograma mesh por mesh
+      root.traverse(obj => {
+        if (obj.isMesh) {
+          obj.geometry.computeVertexNormals();
+          modelRoot.add(createHologram(obj.clone()));
+        }
+      });
+
+      // Aplicar escala
       modelRoot.scale.set(scaleValue, scaleValue, scaleValue);
-      modelRoot.lookAt(camera.position);
-      
-      // Rotación inicial
+
+      // Mirar a cámara (suaviza resultado final)
+      const look = camera.position.clone();
+      look.y = 0;
+      modelRoot.lookAt(look);
+
+      // Rotación inicial opcional (tu system)
       if (initialRotation) {
-        modelRoot.rotation.set(
-          initialRotation.x,
-          initialRotation.y,
-          initialRotation.z
-        );
+        modelRoot.rotation.x += initialRotation.x;
+        modelRoot.rotation.y += initialRotation.y;
+        modelRoot.rotation.z += initialRotation.z;
       }
 
       modelRoot.position.y = 0.1;
-
       scene.add(modelRoot);
+
       fadeInModel();
     },
     null,
@@ -188,6 +297,27 @@ function loadModel(path, scaleValue, initialRotation) {
   );
 }
 
+
+
+function fixModelOrientation(root) {
+  const box = new THREE.Box3().setFromObject(root);
+  const size = new THREE.Vector3();
+  box.getSize(size);
+
+  // Si la altura REAL está en Z → Z es arriba
+  if (size.z > size.y && size.z > size.x) {
+    // Z→Y
+    root.rotation.x = -Math.PI / 2;
+  }
+
+  // Si la altura REAL está en X → X es arriba
+  else if (size.x > size.y && size.x > size.z) {
+    // X→Y
+    root.rotation.z = Math.PI / 2;
+  }
+
+  // Si Y ya es el eje más alto → Y es arriba (no tocamos nada)
+}
 
 // AUTO-SWITCH
 function loadNextModel() {
