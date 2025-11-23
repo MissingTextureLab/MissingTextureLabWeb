@@ -257,9 +257,38 @@ async function handleCardClick(item) {
     }
 
     zone.innerHTML = `
-      <iframe src="${url}"
-        style="width:100%; height:100%; border:none;" allowfullscreen>
-      </iframe>`;
+    <iframe
+      src="${url}"
+      style="width:100%; height:100%; border:none;"
+
+      allow="
+        camera; 
+        microphone; 
+        fullscreen; 
+        geolocation; 
+        display-capture; 
+        clipboard-read; 
+        clipboard-write; 
+        autoplay; 
+        encrypted-media; 
+        xr-spatial-tracking; 
+        midi;
+      "
+
+      sandbox="
+        allow-scripts 
+        allow-same-origin 
+        allow-forms 
+        allow-downloads 
+        allow-pointer-lock 
+        allow-presentation 
+        allow-modals 
+        allow-popups
+      "
+
+      allowfullscreen
+    ></iframe>
+  `;
     return;
   }
 
