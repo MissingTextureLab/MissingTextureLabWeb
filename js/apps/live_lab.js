@@ -13,7 +13,6 @@ import { UnrealBloomPass } from "https://cdn.jsdelivr.net/npm/three@0.180.0/exam
 // TEXT / LOADERS
 import { FontLoader } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/FontLoader.js";
 import { TextGeometry } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/geometries/TextGeometry.js";
-// Orbit Controls
 import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js";
 import { OBJExporter } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/exporters/OBJExporter.js";
@@ -22,14 +21,18 @@ import { bringToFront, addToTaskbar } from "../windows.js";
 
 let hydra;
 let portfolioCodes = [];
-let strudelEmbedLoaded = false;
 
-// 🔧 estado específico para Three standalone
+let strudelEmbedLoaded = false;
 let threeRenderer = null;
 let threeResizeHandler = null;
 
+// 🔥 NUEVO SISTEMA DE FILTROS Y ORDEN
+let filteredCodes = [];
+let currentFilter = "all";
+let currentSort = "az";
+let firstLoad = true;
 // ==========================================================
-// 📏 Fix viewport en móviles (Safari, Chrome)
+// 📏 Fix viewport en móviles
 // ==========================================================
 function setRealVh() {
   document.documentElement.style.setProperty("--real-vh", `${window.innerHeight}px`);
@@ -60,16 +63,15 @@ const lazyLoadScript = (src) =>
   });
 
 // ==========================================================
-// 🎨 Asegurar Hydra cargada
+// 🎨 Asegurar Hydra
 // ==========================================================
 async function ensureHydra() {
   if (!window.Hydra)
     await lazyLoadScript("https://unpkg.com/hydra-synth@1.3.29/dist/hydra-synth.js");
-  console.log("🎨 Hydra lista.");
 }
 
 // ==========================================================
-// 🧩 Asegurar Three.js y dependencias
+// 🧩 Asegurar Three
 // ==========================================================
 async function ensureThree() {
   if (window.THREE) return;
@@ -84,44 +86,26 @@ async function ensureThree() {
   window.ShaderPass = ShaderPass;
   window.GLTFLoader = GLTFLoader;
   window.OBJExporter = OBJExporter;
-
-  console.log("✅ Three.js y dependencias globales listas (desde import ESM).");
 }
 
 // ==========================================================
-// 🧹 Limpieza global para Three.js overlays
+// 🧹 Limpieza Three
 // ==========================================================
 function cleanupThreeOverlay() {
   const overlay = window._threeCanvas;
   if (overlay) {
-    try {
-      overlay.remove();
-      console.log("🧹 Canvas Three.js overlay eliminado.");
-    } catch (e) {
-      console.warn("⚠️ No se pudo eliminar el canvas Three overlay:", e);
-    }
+    try { overlay.remove(); } catch {}
   }
   window._threeCanvas = null;
+
   if (window._threeAnimationId) {
     cancelAnimationFrame(window._threeAnimationId);
     window._threeAnimationId = null;
   }
 }
 
-// 🔧 Limpieza específica de iframe (si lo usas en otros sitios)
-function cleanupThreeFrame() {
-  const wrap = document.getElementById("three-wrapper");
-  const frame = document.getElementById("three-frame");
-  if (wrap && frame) {
-    wrap.style.opacity = 0;
-    wrap.style.visibility = "hidden";
-    frame.src = "about:blank"; // Reinicia iframe
-  }
-}
-
-// 🔧 NUEVO: limpieza suave del modo Three standalone
 function cleanupThreeCore() {
-  const threeContainer = document.getElementById("three-container");
+  const cont = document.getElementById("three-container");
   const canvas = document.getElementById("three-canvas");
 
   if (threeResizeHandler) {
@@ -130,31 +114,24 @@ function cleanupThreeCore() {
   }
 
   if (threeRenderer) {
-    try {
-      threeRenderer.dispose?.();
-    } catch (e) {
-      console.warn("⚠️ No se pudo hacer dispose del renderer Three:", e);
-    }
+    try { threeRenderer.dispose?.(); } catch {}
     threeRenderer = null;
   }
 
   if (canvas) {
-    // limpiar el contenido por si acaso
     const gl = canvas.getContext("webgl") || canvas.getContext("webgl2");
-    if (gl) {
-      gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
-    }
+    if (gl) gl.clear(gl.COLOR_BUFFER_BIT);
   }
 
-  if (threeContainer) {
-    threeContainer.style.opacity = "0";
-    threeContainer.style.visibility = "hidden";
+  if (cont) {
+    cont.style.opacity = "0";
+    cont.style.visibility = "hidden";
   }
-
-  console.log("🧹 Three standalone reseteado.");
 }
 
+// ==========================================================
+// 🧹 Limpieza Strudel
+// ==========================================================
 async function cleanupStrudel() {
   try {
     if (window.Tone?.Transport?.state !== "stopped") {
@@ -163,17 +140,14 @@ async function cleanupStrudel() {
     if (window.Tone?.context && window.Tone.context.state !== "closed") {
       await window.Tone.context.close();
     }
-    console.log("🧹 Strudel detenido.");
-  } catch (err) {
-    console.warn("⚠️ Error al limpiar Strudel:", err);
-  }
+  } catch {}
 
   const mask = document.getElementById("strudel-mask");
   if (mask) mask.innerHTML = "";
 }
 
 // ==========================================================
-// ✂️ Limpieza de código export default en patches
+// 💾 Sanitizar código
 // ==========================================================
 function sanitizePatchCode(raw) {
   if (!raw) return "";
@@ -181,57 +155,45 @@ function sanitizePatchCode(raw) {
     .replace(/^export\s+default\s*`/, "")
     .replace(/`;\s*$/, "")
     .replace(/`\s*$/, "")
-    .replace(/\uFEFF/g, "")
-    .replace(/\r/g, "")
     .trim();
 }
 
-// ==========================================================
-// 💾 Obtener código desde item.code o item.path
-// ==========================================================
 async function getPatchCode(item) {
   if (item.code) return sanitizePatchCode(item.code);
 
   if (item.path) {
     try {
       const res = await fetch(item.path);
-      if (!res.ok) throw new Error(`Error al cargar patch: ${item.path}`);
-      const text = await res.text();
-      return sanitizePatchCode(text);
+      if (!res.ok) throw new Error("Patch no accesible");
+      return sanitizePatchCode(await res.text());
     } catch (err) {
-      console.error("⚠️ Error cargando patch externo:", err);
-      return "";
+      console.warn("⚠ Error cargando patch:", err);
     }
   }
   return "";
 }
 
 // ==========================================================
-// 🎴 Cargar tarjetas desde JSON
+// 🎴 Cargar JSON
 // ==========================================================
 async function loadPortfolioCodes() {
   try {
-    const res = await fetch("./data/live-lab.json", { cache: "no-store" });
-    if (!res.ok) throw new Error(`Error al cargar JSON (${res.status})`);
-
+    const res = await fetch("./data/live-lab.json");
     portfolioCodes = await res.json();
     populateCards();
-    console.log("📦 Tarjetas cargadas:", portfolioCodes.length);
 
     if (portfolioCodes.length > 0) {
       await handleCardClick(portfolioCodes[0]);
-      console.log(`🎬 Primer patch cargado automáticamente: ${portfolioCodes[0].title}`);
     }
   } catch (err) {
-    console.error("⚠️ No se pudieron cargar las tarjetas:", err);
+    console.error("❌ No se pudo cargar JSON:", err);
   }
 }
 
 // ==========================================================
-// 🧠 Lógica principal de selección de tarjeta
+// 🧠 Lógica de selección de tarjeta
 // ==========================================================
 async function handleCardClick(item) {
-  // 🔧 Limpieza general antes de cambiar de modo
   await cleanupStrudel();
   cleanupThreeOverlay();
   cleanupThreeCore();
@@ -239,199 +201,202 @@ async function handleCardClick(item) {
   const hydraContainer = document.getElementById("hydra-container");
   const strudelWrapper = document.getElementById("strudel-wrapper");
   const threeContainer = document.getElementById("three-container");
-  const overlay = document.getElementById("audio-unlock");
+  const p5Container = document.getElementById("p5-container");
 
-  // apagar cualquier overlay de audio
-  if (overlay) overlay.style.display = "none";
-
-  // 🔧 Hidratar / parar Hydra si estaba activo
-  if (hydra) {
-    try {
-      hydra.synth.stop();
-      hydra.resizeObserver?.disconnect?.();
-    } catch (e) {
-      console.warn("Hydra stop warning:", e);
-    }
-    hydra = null;
-  }
-
-  // 🔧 Cerrar panel en móvil al cambiar de tarjeta
-  const panel = document.getElementById("lab-left");
-  const toggle = document.getElementById("lab-folder-toggle");
-  if (document.body.classList.contains("mobile-mode") && panel && toggle) {
-    panel.classList.remove("open");
-    toggle.classList.remove("active");
-    toggle.textContent = "📂";
-  }
-
-  // Normalizar visibilidad base: todo oculto
   toggleVisible(strudelWrapper, false);
   toggleVisible(hydraContainer, false);
   toggleVisible(threeContainer, false);
+  toggleVisible(p5Container, false);
 
   // === STRUDEL ===
   if (item.type === "strudel") {
-    // ✅ solo Strudel visible
     toggleVisible(strudelWrapper, true);
 
     const mask = document.getElementById("strudel-mask");
-
-    if (mask) {
-      mask.innerHTML = "";
-      mask.style.opacity = 0;
-      // pequeño fade-in para la UI
-      setTimeout(() => (mask.style.opacity = 1), 150);
-    }
+    if (mask) mask.innerHTML = "";
 
     if (!strudelEmbedLoaded) {
       await lazyLoadScript("https://unpkg.com/@strudel/embed@latest");
       strudelEmbedLoaded = true;
-      console.log("🎶 @strudel/embed cargado.");
     }
 
     const code = await getPatchCode(item);
-    const latinSafe = code
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^\x00-\xFF]/g, "");
-
     const repl = document.createElement("strudel-repl");
-    repl.setAttribute("code", latinSafe);
-    Object.assign(repl.style, {
-      width: "100%",
-      height: "100%",
-      display: "block",
-      background: "rgba(10,10,15,0.95)",
-      border: "none",
-    });
-
-    if (mask) mask.appendChild(repl);
-    console.log("🎼 Código original (UTF-8):", code);
-
-    if (window.Tone && Tone.context?.state === "suspended" && overlay) {
-      overlay.style.display = "flex";
-      overlay.onclick = () =>
-        Tone.context.resume().then(() => (overlay.style.display = "none"));
-    }
+    repl.setAttribute("code", code);
+    repl.style = "width:100%; height:100%; background:black;";
+    mask.appendChild(repl);
     return;
   }
 
-  // === HYDRA / HYDRA-THREE ===
+  // === HYDRA ===
   if (item.type === "hydra" || item.type === "hydra-three") {
-    // ✅ solo Hydra visible
     toggleVisible(hydraContainer, true);
 
     const code = await getPatchCode(item);
-    const codeArea = document.getElementById("hydra-code");
-    if (codeArea) codeArea.value = code;
+    document.getElementById("hydra-code").value = code;
 
     requestAnimationFrame(() => runHydraCode());
     return;
   }
 
-  // === THREE PURO (modo Blob con importmap replicado) ===
-    if (item.type === "three") {
+  // === P5 — IFRAME ===
+  if (item.type === "p5") {
+    toggleVisible(p5Container, true);
 
-      // 1️⃣ Remove old listeners + renderer
-      cleanupThreeCore();
+    const zone = document.getElementById("p5-canvas-zone");
+    const url = item.path?.trim();
 
-      const threeContainer = document.getElementById("three-container");
-      toggleVisible(threeContainer, true);
-
-      // 2️⃣ REPLACE canvas with a fresh one
-      const oldCanvas = document.getElementById("three-canvas");
-      const newCanvas = oldCanvas.cloneNode(true);
-      oldCanvas.parentNode.replaceChild(newCanvas, oldCanvas);
-
-      // 3️⃣ Now safe to get fresh canvas
-      const canvas = newCanvas;
-
-      await ensureThree();
-
-      const code = await getPatchCode(item);
-
-      // 4️⃣ Create renderer on a NEW context
-      threeRenderer = new THREE.WebGLRenderer({
-          canvas,
-          antialias: true
-      });
-
-      threeRenderer.setPixelRatio(window.devicePixelRatio);
-
-      const resize = () => {
-          const w = threeContainer.clientWidth;
-          const h = threeContainer.clientHeight;
-          if (w && h) threeRenderer.setSize(w, h, false);
-      };
-      threeResizeHandler = resize;
-      resize();
-      window.addEventListener("resize", resize);
-
-      try {
-          new Function("THREE", "renderer", "canvas", code)(
-              THREE,
-              threeRenderer,
-              canvas
-          );
-      } catch (e) {
-          console.error("❌ Error en código Three:", e);
-      }
-
+    if (!url) {
+      zone.innerHTML = `
+        <div style="
+          display:flex; align-items:center; justify-content:center;
+          width:100%; height:100%; background:#111; color:#ccc;">
+          ❌ No hay 'path' definido para este sketch p5.js
+        </div>`;
       return;
+    }
+
+    zone.innerHTML = `
+      <iframe src="${url}"
+        style="width:100%; height:100%; border:none;" allowfullscreen>
+      </iframe>`;
+    return;
   }
 
-  console.warn("⚠️ Tipo de tarjeta desconocido:", item.type);
+// (PARTE 2 CONTINÚA…)
+  // === THREE ===
+  if (item.type === "three") {
+    cleanupThreeCore();
+
+    toggleVisible(threeContainer, true);
+
+    const oldCanvas = document.getElementById("three-canvas");
+    const newCanvas = oldCanvas.cloneNode(true);
+    oldCanvas.parentNode.replaceChild(newCanvas, oldCanvas);
+
+    const canvas = newCanvas;
+
+    await ensureThree();
+    const code = await getPatchCode(item);
+
+    threeRenderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    threeRenderer.setPixelRatio(window.devicePixelRatio);
+
+    const resize = () => {
+      const w = threeContainer.clientWidth;
+      const h = threeContainer.clientHeight;
+      if (w && h) threeRenderer.setSize(w, h, false);
+    };
+
+    threeResizeHandler = resize;
+    resize();
+    window.addEventListener("resize", resize);
+
+    try {
+      new Function("THREE", "renderer", "canvas", code)(THREE, threeRenderer, canvas);
+    } catch (e) {
+      console.error("❌ Error Three:", e);
+    }
+
+    return;
+  }
+
+  console.warn("⚠ Tipo de tarjeta desconocido:", item.type);
 }
 
 // ==========================================================
-// 💾 Tarjetas
+// Tarjetas + FILTRO + ORDEN
 // ==========================================================
 function populateCards() {
+  // 1️⃣ Filtro
+  filteredCodes = portfolioCodes.filter((item) => {
+    switch (currentFilter) {
+      case "strudel":
+        return item.type === "strudel";
+      case "p5":
+        return item.type === "p5";
+      case "hydra":
+        return item.type === "hydra" || item.type === "hydra-three";
+      case "three":
+        return item.type === "three";
+      case "usesHydra":
+        return item.usesHydra === true;
+      case "usesThree":
+        return item.usesThree === true;
+      default:
+        return true; // all
+    }
+  });
+
+  // 2️⃣ Orden (excepto en el primer load)
+  if (!firstLoad) {
+    filteredCodes.sort((a, b) => {
+      if (currentSort === "az") return a.title.localeCompare(b.title);
+      if (currentSort === "za") return b.title.localeCompare(a.title);
+      if (currentSort === "type") {
+        const typePriority = {
+          three: 1,
+          strudel: 2,
+          hydra: 3,
+          "hydra-three": 4,
+          p5: 5
+        };
+        return (typePriority[a.type] ?? 999) - (typePriority[b.type] ?? 999);
+      }
+      return 0;
+    });
+  }
+
   const container = document.getElementById("lab-cards");
   if (!container) return;
   container.innerHTML = "";
 
-  portfolioCodes.forEach((item) => {
+  filteredCodes.forEach((item) => {
     const card = document.createElement("div");
     card.className = "lab-card";
 
+    // etiquetas base
     let tagsHTML = `<small class="tag ${item.type}">${item.type.toUpperCase()}</small>`;
 
-    // 🔹 Añadir etiqueta THREE si aplica
+    // THREE extra
     if (item.usesThree || item.type === "hydra-three") {
       tagsHTML += `<small class="tag three">THREE</small>`;
     }
 
-    // 🔹 Añadir etiqueta HYDRA solo si usaHydra = true y NO es de tipo hydra
+    // HYDRA extra
     if (item.usesHydra && item.type !== "hydra" && item.type !== "hydra-three") {
       tagsHTML += `<small class="tag hydra">HYDRA</small>`;
     }
 
+    // thumb opcional
+    const thumb = item.thumb
+      ? `<img class="lab-thumb" src="${item.thumb}" alt="${item.title}" />`
+      : "";
+
     card.innerHTML = `
+      ${thumb}
       <span class="lab-title">${item.title}</span>
-      ${tagsHTML}
+      <div class="lab-tags">
+        ${tagsHTML}
+      </div>
     `;
 
     card.onclick = () => handleCardClick(item);
     container.appendChild(card);
   });
+
+  firstLoad = false;
 }
 
 // ==========================================================
-// 🌈 HYDRA (entorno completo optimizado)
+// HYDRA ENGINE
 // ==========================================================
 async function runHydraCode() {
-  cleanupThreeOverlay(); // 🔹 Limpia antes de ejecutar nuevo código Hydra
-
   const container = document.getElementById("hydra-container");
   const canvas = document.getElementById("hydra-canvas");
-  if (!canvas || !container) return;
+  if (!container || !canvas) return;
 
-  const code = document.getElementById("hydra-code")?.value?.trim() || "";
-
-  canvas.style.transition = "opacity 0.25s ease";
-  canvas.style.opacity = "0.0";
-  await new Promise((r) => setTimeout(r, 250));
+  const code = document.getElementById("hydra-code").value.trim();
 
   const rect = container.getBoundingClientRect();
   canvas.width = rect.width || window.innerWidth;
@@ -440,9 +405,7 @@ async function runHydraCode() {
   if (hydra) {
     try {
       hydra.synth.stop();
-    } catch (e) {
-      console.warn("Hydra cleanup warning:", e);
-    }
+    } catch {}
     hydra = null;
   }
 
@@ -452,40 +415,27 @@ async function runHydraCode() {
       detectAudio: false,
       makeGlobal: true,
     });
-    window._hydra = hydra;
-    hydra.setResolution(canvas.width, canvas.height);
-    console.log("🎨 Hydra inicializada sin flash.");
 
-    requestAnimationFrame(async () => {
+    hydra.setResolution(canvas.width, canvas.height);
+
+    requestAnimationFrame(() => {
       try {
-        if (code && code.length > 5) {
-          if (code.includes("THREE") || code.includes("new THREE.")) await ensureThree();
+        if (code.length > 5) {
           new Function(code)();
-          console.log("🎛️ Patch Hydra ejecutado correctamente.");
         } else {
-          osc(10, 0.1, 1.2).modulate(noise(2)).kaleid(3).out(o0);
+          osc(10, 0.1, 1.2).kaleid(3).out();
         }
       } catch (err) {
-        console.error("❌ Error ejecutando código Hydra:", err);
+        console.error("Hydra error:", err);
       }
-
-      setTimeout(() => (canvas.style.opacity = "1.0"), 60);
-    });
-
-    window.addEventListener("resize", () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      hydra.synth.setResolution(w, h);
-      hydra.setResolution(w, h);
     });
   } catch (err) {
-    console.error("❌ Error al iniciar Hydra:", err);
-    canvas.style.opacity = "1.0";
+    console.error("❌ Error Hydra:", err);
   }
 }
 
 // ==========================================================
-// 🎛️ Controles de ventana
+// Ventanas
 // ==========================================================
 function setupWindowControls(win, isMobile) {
   const header = win.querySelector(".lab-header");
@@ -497,26 +447,34 @@ function setupWindowControls(win, isMobile) {
     return;
   }
 
+  // drag ventana
   header.addEventListener("mousedown", (e) => {
     if (e.target.closest(".lab-buttons")) return;
     e.preventDefault();
     bringToFront(win);
+
     const rect = win.getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const offsetY = e.clientY - rect.top;
+
     function onMove(ev) {
       win.style.left = ev.clientX - offsetX + "px";
       win.style.top = ev.clientY - offsetY + "px";
     }
+
     function onUp() {
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
     }
+
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
   });
 
+  // minimizar
   header.querySelector(".min-btn").onclick = () => (win.style.display = "none");
+
+  // maximizar / restaurar
   header.querySelector(".max-btn").onclick = () => {
     if (!maximized) {
       prevRect = {
@@ -526,8 +484,8 @@ function setupWindowControls(win, isMobile) {
         height: win.style.height,
       };
       Object.assign(win.style, {
-        left: 0,
-        top: 0,
+        left: "0px",
+        top: "0px",
         width: window.innerWidth + "px",
         height: window.innerHeight - 40 + "px",
       });
@@ -538,17 +496,19 @@ function setupWindowControls(win, isMobile) {
     }
   };
 
+  // cerrar
   header.querySelector(".close-btn").onclick = async () => {
-    // 🔧 Al cerrar limpiamos todo lo posible
     await cleanupStrudel();
     cleanupThreeOverlay();
     cleanupThreeCore();
+
     if (hydra) {
       try {
         hydra.synth.stop();
-      } catch (e) {}
+      } catch {}
       hydra = null;
     }
+
     document.querySelector('.task-btn[data-task="live-lab"]')?.remove();
     win.remove();
   };
@@ -567,17 +527,17 @@ function setupPanelToggle() {
 }
 
 // ==========================================================
-// 🚀 Crear ventana principal
+// UI PRINCIPAL (con filtros encima de las tarjetas)
 // ==========================================================
+
+
 async function createUI() {
   const win = document.createElement("div");
   win.id = "live-lab";
   win.className = "window window-live-lab simple";
   win.dataset.task = "live-lab";
 
-  const isMobile =
-    document.body.classList.contains("mobile-mode") ||
-    window.matchMedia("(max-width: 800px)").matches;
+  const isMobile = window.matchMedia("(max-width: 800px)").matches;
 
   win.innerHTML = `
     <div class="lab-header window-header">
@@ -590,15 +550,39 @@ async function createUI() {
     </div>
     <div class="lab-body">
       <div class="lab-left open" id="lab-left">
+
+        <!-- 🔥 FILTROS Y ORDEN -->
+        <div id="lab-filters">
+          <select id="filter-type" class="emoji-select">
+            <option value="all">Todos</option>
+            <option value="three">Three.js</option>
+            <option value="strudel">Strudel</option>
+            <option value="hydra">Hydra</option>
+            <option value="p5">p5.js</option>
+          </select>
+
+          <select id="sort-type">
+            <option value="az">A → Z</option>
+            <option value="za">Z → A</option>
+            <option value="type">Por tipo</option>
+          </select>
+        </div>
+
         <div class="lab-cards" id="lab-cards"></div>
       </div>
+
       <div class="lab-main">
+        <!-- THREE -->
         <div id="three-container" style="opacity:0;visibility:hidden;">
           <canvas id="three-canvas"></canvas>
         </div>
+
+        <!-- STRUDEL -->
         <div id="strudel-wrapper" class="strudel-zone" style="opacity:0;visibility:hidden;">
           <div id="strudel-mask"></div>
         </div>
+
+        <!-- HYDRA -->
         <div id="hydra-container" style="opacity:0;visibility:hidden;">
           <canvas id="hydra-canvas"></canvas>
           <div id="hydra-editor">
@@ -610,65 +594,63 @@ async function createUI() {
           </div>
           <button id="hydra-show" style="display:none;">📝 Editor</button>
         </div>
-        <div id="audio-unlock" style="display:none;"><p>🔊 Haz click para habilitar el audio</p></div>
+
+        <!-- P5 NUEVO (solo iframe) -->
+        <div id="p5-container" style="opacity:0;visibility:hidden;">
+          <div id="p5-canvas-zone" style="width:100%; height:100%;"></div>
+        </div>
       </div>
     </div>
-    <button id="lab-folder-toggle" title="Mostrar/Ocultar panel">📁</button>
+
+    <button id="lab-folder-toggle">📁</button>
   `;
 
   document.body.appendChild(win);
 
-  const isM = isMobile;
-  if (isM) {
-    Object.assign(win.style, {
-      position: "fixed",
-      inset: "0",
-      width: "100vw",
-      height: "var(--real-vh)",
-      margin: "0",
-      border: "none",
-      borderRadius: "0",
-      background: "rgba(10,10,15,0.92)",
-      backdropFilter: "blur(10px)",
-    });
-    win.querySelector(".min-btn")?.remove();
-    win.querySelector(".max-btn")?.remove();
-    document.body.classList.add("mobile-mode");
-  }
-
-  setupWindowControls(win, isM);
+  setupWindowControls(win, isMobile);
   setupPanelToggle();
 
+  // Hydra botones
   document.getElementById("hydra-run").onclick = () => runHydraCode();
 
-  const editor = document.getElementById("hydra-editor");
   const hideBtn = document.getElementById("hydra-hide");
+  const editor = document.getElementById("hydra-editor");
   const showBtn = document.getElementById("hydra-show");
 
   hideBtn.onclick = () => {
     editor.style.display = "none";
     showBtn.style.display = "block";
   };
-
   showBtn.onclick = () => {
     editor.style.display = "flex";
     showBtn.style.display = "none";
   };
 
+  // 🔥 Eventos de filtros
+  const filterSelect = document.getElementById("filter-type");
+  const sortSelect = document.getElementById("sort-type");
+
+  if (filterSelect) {
+    filterSelect.onchange = (e) => {
+      currentFilter = e.target.value;
+      populateCards();
+    };
+  }
+
+  if (sortSelect) {
+    sortSelect.onchange = (e) => {
+      currentSort = e.target.value;
+      populateCards();
+    };
+  }
+
   await loadPortfolioCodes();
-  if (!isM) addToTaskbar("Live Lab", "🎛️");
+  if (!isMobile) addToTaskbar("Live Lab", "🎛️");
   bringToFront(win);
 }
-function updateRealVH() {
-  let vh = window.innerHeight * 0.01;
-  document.documentElement.style.setProperty('--real-vh', `${vh}px`);
-}
 
-updateRealVH();
-window.addEventListener('resize', updateRealVH);
-window.addEventListener('orientationchange', updateRealVH);
 // ==========================================================
-// 🚀 Export principal
+// Export principal
 // ==========================================================
 export async function openLiveLabWindow() {
   const existing = document.getElementById("live-lab");
@@ -677,7 +659,9 @@ export async function openLiveLabWindow() {
     bringToFront(existing);
     return;
   }
+
   await ensureHydra();
   await createUI();
-  console.log("✅ Live Lab (Hydra + Strudel + Three.js + móvil) listo.");
+  console.log("✅ Live Lab listo (Hydra + Strudel + Three.js + p5 iframe + filtros).");
 }
+

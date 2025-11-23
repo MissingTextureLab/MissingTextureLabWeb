@@ -2,138 +2,125 @@
   {
     "title": "Mi_primera_canción :)",
     "type": "strudel",
-    "thumb": "icons/wave.png",
     "path": "data/patches/strudel/mi_primera_cancion.js"
   },
-
+  {
+    "title": "Ascii_Cam",
+    "type": "p5",
+    "path": "https://editor.p5js.org/MissingTextureLab/full/XY6ayu31O"
+  },
+    {
+    "title": "Face_RandomMesh",
+    "type": "p5",
+    "path": "https://editor.p5js.org/MissingTextureLab/full/T3IjuQNhC"
+  },
   {
     "title": "Glitchy Snow",
     "type": "hydra", 
-    "thumb": "icons/hydra.png",
     "usesThree": true,
     "path": "data/patches/hydra/snow.js"
   },
   {
     "title": "Viewer",
     "type": "three", 
-    "thumb": "icons/hydra.png",
     "path": "data/patches/three/obj.js"
   },
     {
     "title": "Lines",
     "type": "three", 
-    "thumb": "icons/hydra.png",
     "path": "data/patches/three/lines.js"
   },
   {
     "title": "Pixel_Camera",
     "type": "hydra", 
-    "thumb": "icons/hydra.png",
     "path": "data/patches/hydra/pixelcam.js"
   },
   {
     "title": "Celular_Camera",
     "type": "hydra", 
-    "thumb": "icons/hydra.png",
     "path": "data/patches/hydra/celulas.js"
   },
   {
     "title": "Kaleido_Camera",
     "type": "hydra", 
-    "thumb": "icons/hydra.png",
     "path": "data/patches/hydra/kaleido.js"
   },
   {
     "title": "Circular_noise_Camera",
     "type": "hydra", 
-    "thumb": "icons/hydra.png",
     "path": "data/patches/hydra/circular.js"
   },
   {
     "title": "color_noise_Camera",
     "type": "hydra", 
-    "thumb": "icons/hydra.png",
     "path": "data/patches/hydra/color_noise.js"
   },
   {
     "title": "x=>x.speed",
     "type": "strudel",
-    "thumb": "icons/wave.png",
     "path": "data/patches/strudel/xspeed.js"
   },
   {
     "title": "Primer_Intento_Granular",
     "type": "strudel",
-    "thumb": "icons/wave.png",
     "path": "data/patches/strudel/primer_intento_granular.js"
   },
   {
     "title": "Ambient_fmwaves",
     "type": "strudel",
-    "thumb": "icons/wave.png",
     "path": "data/patches/strudel/ambient1.js"
   },
   {
     "title": "Coding DnB/Jungle 1",
     "type": "strudel",
-    "thumb": "icons/wave.png",
     "path": "data/patches/strudel/dnb1.js"
   },
   {
     "title": "Funk_Brasileño",
     "type": "strudel",
-    "thumb": "icons/wave.png",
     "path": "data/patches/strudel/funkbrasil.js"
   },
   {
     "title": "pixelate_crush",
     "type": "strudel",
-    "thumb": "icons/wave.png",
     "path": "data/patches/strudel/pixelate_crush.js",
     "usesHydra": true
   },
   {
     "title": "bajo.sinTerminar",
     "type": "strudel",
-    "thumb": "icons/wave.png",
     "path": "data/patches/strudel/bajopunk.js"
   },
   {
     "title": "Ambient2_PajarosDrone",
     "type": "strudel",
-    "thumb": "icons/wave.png",
     "path": "data/patches/strudel/ambient2.js",
     "usesHydra": true
   },
   {
     "title": "Contrapunto",
     "type": "strudel",
-    "thumb": "icons/wave.png",
     "path": "data/patches/strudel/contrapunto.js"
   },
   {
     "title": "Coding_House",
     "type": "strudel",
-    "thumb": "icons/wave.png",
     "path": "data/patches/strudel/house.js"
   },
   {
     "title": "Coding DnB/Jungle 1",
     "type": "strudel",
-    "thumb": "icons/wave.png",
     "path": "data/patches/strudel/dnb2.js",
     "usesHydra": true
   },
   {
     "title": "Coding_Trance (@_switch_angel tutorial)",
     "type": "strudel",
-    "thumb": "icons/wave.png",
     "path": "data/patches/strudel/codingtrance.js"
   },
   {
     "title": "Coding_House 2",
     "type": "strudel",
-    "thumb": "icons/wave.png",
     "path": "data/patches/strudel/house2.js"
   }
 ]

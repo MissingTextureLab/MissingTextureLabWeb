@@ -20,6 +20,7 @@ const customOrder = [
   "Ajustes",
   "Privado",
   "Instagram",
+  "TikTok",
   "Github",
   "Youtube",
 ];
@@ -290,3 +291,4 @@ document.addEventListener('DOMContentLoaded', () => {
   // 4️⃣ fix zoom
   setInterval(checkZoomChange, 200);
 });
+

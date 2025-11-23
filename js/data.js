@@ -9,10 +9,11 @@ export let folders = [
 
   // 🌐 Enlaces externos
   { name: "Instagram",   x: 0, y: 6, icon: "icons/FolderInstagram.png",  type: "link", url: "https://instagram.com/missingtexture_lab" },
-  { name: "Github",      x: 1, y: 6, icon: "icons/FolderGithub.png",     type: "link", url: "https://github.com/MissingTextureLab" },
-  { name: "Youtube",     x: 2, y: 6, icon: "icons/YoutubeFolder.png",    type: "link", url: "https://www.youtube.com/@missingtexture_lab" },
+  { name: "TikTok",     x: 1, y: 6, icon: "icons/tiktok.png",    type: "link", url: "https://www.tiktok.com/@missingtexture_lab" },
+  { name: "Github",      x: 2, y: 6, icon: "icons/FolderGithub.png",     type: "link", url: "https://github.com/MissingTextureLab" },
+  { name: "Youtube",     x: 3, y: 6, icon: "icons/YoutubeFolder.png",    type: "link", url: "https://www.youtube.com/@missingtexture_lab" },
 
-  { name: "Privado",     x: 3, y: 6, icon: "icons/FolderLocked.png",     type: "folder" },
+  { name: "Privado",     x: 4, y: 6, icon: "icons/FolderLocked.png",     type: "folder" },
   { name: "Ajustes", icon: "icons/FolderAjustes.png", type: "app", action: "openAppInfo" },
 ];
 
@@ -27,10 +28,10 @@ if (isMobile) {
     { name: "Lab",         icon: "icons/FolderCode.png",       type: "app", action: "openLiveLabWindow" },
     { name: "Futuro",      icon: "icons/FolderRandom.png",     type: "folder" },
     // 🌐 Enlaces externos móviles también
-    { name: "Instagram",   icon: "icons/FolderInstagram.png",  type: "link", url: "https://instagram.com/missingtexture_lab" },
-    { name: "Github",      icon: "icons/FolderGithub.png",     type: "link", url: "https://github.com/MissingTextureLab" },
-    { name: "Youtube",     icon: "icons/YoutubeFolder.png",    type: "link", url: "https://www.youtube.com/@missingtexture_lab" },
-    { name: "Privado",     icon: "icons/FolderLocked.png",     type: "folder" },
+    { name: "Instagram",   x: 0, y: 6, icon: "icons/FolderInstagram.png",  type: "link", url: "https://instagram.com/missingtexture_lab" },
+    { name: "TikTok",     x: 1, y: 6, icon: "icons/tiktok.png",    type: "link", url: "https://www.tiktok.com/@missingtexture_lab" },
+    { name: "Github",      x: 2, y: 6, icon: "icons/FolderGithub.png",     type: "link", url: "https://github.com/MissingTextureLab" },
+    { name: "Youtube",     x: 3, y: 6, icon: "icons/YoutubeFolder.png",    type: "link", url: "https://www.youtube.com/@missingtexture_lab" },
     { name: "Ajustes", icon: "icons/FolderAjustes.png", type: "app", action: "openAppInfo" },
   ];
 
